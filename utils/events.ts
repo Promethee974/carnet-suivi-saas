@@ -8,12 +8,6 @@ export interface CarnetEvents {
     domainId: string;
     status: string;
   };
-  'carnet-updated': {
-    studentId: ID;
-  };
-  'student-updated': {
-    studentId: ID;
-  };
 }
 
 // Gestionnaire d'événements centralisé
@@ -46,12 +40,4 @@ export const eventManager = new EventManager();
 // Fonctions utilitaires pour émettre des événements communs
 export function emitSkillUpdate(studentId: ID, skillId: string, domainId: string, status: string) {
   eventManager.emit('skill-updated', { studentId, skillId, domainId, status });
-}
-
-export function emitCarnetUpdate(studentId: ID) {
-  eventManager.emit('carnet-updated', { studentId });
-}
-
-export function emitStudentUpdate(studentId: ID) {
-  eventManager.emit('student-updated', { studentId });
 }

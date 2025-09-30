@@ -71,52 +71,6 @@ export function compressImage(
   });
 }
 
-export async function captureFromCamera(): Promise<string> {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-      video: { 
-        facingMode: 'environment',
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      } 
-    });
-
-    return new Promise((resolve, reject) => {
-      const video = document.createElement('video');
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-
-      if (!ctx) {
-        reject(new Error('Impossible de créer le contexte canvas'));
-        return;
-      }
-
-      video.srcObject = stream;
-      video.play();
-
-      video.onloadedmetadata = () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        ctx.drawImage(video, 0, 0);
-        
-        // Arrêter le stream
-        stream.getTracks().forEach(track => track.stop());
-        
-        const dataURL = canvas.toDataURL('image/jpeg', 0.85);
-        resolve(dataURL);
-      };
-
-      video.onerror = () => {
-        stream.getTracks().forEach(track => track.stop());
-        reject(new Error('Erreur lors de l\'accès à la caméra'));
-      };
-    });
-  } catch (error) {
-    throw new Error('Caméra non disponible ou accès refusé');
-  }
-}
-
 export async function captureWithPreview(): Promise<string> {
   return new Promise(async (resolve, reject) => {
     let stream: MediaStream | null = null;
@@ -247,15 +201,6 @@ export async function captureWithPreview(): Promise<string> {
       }
       reject(new Error('Caméra non disponible ou accès refusé'));
     }
-  });
-}
-
-export function createImageFromDataURL(dataURL: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('Erreur lors du chargement de l\'image'));
-    img.src = dataURL;
   });
 }
 

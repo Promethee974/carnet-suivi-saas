@@ -145,20 +145,6 @@ export async function importStudentsFromCSV(csvContent: string): Promise<{ impor
   return { imported, errors };
 }
 
-// Recherche et tri
-export async function searchStudents(query: string): Promise<Student[]> {
-  const students = await getAllStudents();
-  
-  if (!query.trim()) return students;
-  
-  const searchTerm = query.toLowerCase();
-  return students.filter(student => 
-    student.nom.toLowerCase().includes(searchTerm) ||
-    student.prenom.toLowerCase().includes(searchTerm) ||
-    `${student.prenom} ${student.nom}`.toLowerCase().includes(searchTerm)
-  );
-}
-
 export function sortStudents(students: Student[], sortBy: 'nom' | 'prenom' | 'createdAt' = 'nom'): Student[] {
   return [...students].sort((a, b) => {
     switch (sortBy) {

@@ -1,6 +1,5 @@
 import { getCarnet, initializeCarnet, updateMeta, saveCarnet } from '../store/repo.js';
 import { compressImage } from '../utils/image.js';
-import { importFromJSON, createFileInput } from '../utils/export.js';
 
 function debounce<T extends (...args: any[]) => void>(fn: T, delay = 400) {
   let t: number | undefined;
@@ -58,10 +57,6 @@ export class AppHeader extends HTMLElement {
 
           <nav class="flex items-center gap-2 toolbar" aria-label="Barre d'outils">
             <button id="synthese-toggle" class="btn-secondary" title="Synthèse générale">Synthèse</button>
-            <button id="theme-toggle" class="btn-secondary" aria-pressed="false" title="Basculer thème">Thème</button>
-            <button id="import" class="btn-secondary" title="Importer JSON">Importer</button>
-            <button id="export" class="btn-secondary" title="Exporter JSON">Exporter</button>
-            <button id="print" class="btn-primary" title="Imprimer/PDF">Imprimer</button>
           </nav>
         </div>
       </header>
@@ -95,16 +90,6 @@ export class AppHeader extends HTMLElement {
 
     // Toolbar
     this.querySelector('#synthese-toggle')?.addEventListener('click', () => this.showSyntheseModal());
-    this.querySelector('#export')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('app:export')));
-    this.querySelector('#import')?.addEventListener('click', async () => {
-      const file = await createFileInput('.json');
-      if (file) {
-        await importFromJSON(file);
-        await this.render();
-      }
-    });
-    this.querySelector('#print')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('app:print')));
-    this.querySelector('#theme-toggle')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('app:theme-toggle')));
   }
 
   private async showSyntheseModal() {

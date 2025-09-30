@@ -31,7 +31,6 @@ export class StatsSummary extends HTMLElement {
     // Nettoyer les écouteurs d'événements
     if (this.eventListener) {
       eventManager.off('skill-updated', this.eventListener);
-      eventManager.off('carnet-updated', this.eventListener);
     }
   }
 
@@ -39,7 +38,6 @@ export class StatsSummary extends HTMLElement {
     // Supprimer l'ancien écouteur s'il existe
     if (this.eventListener) {
       eventManager.off('skill-updated', this.eventListener);
-      eventManager.off('carnet-updated', this.eventListener);
     }
 
     // Créer un nouvel écouteur
@@ -53,7 +51,6 @@ export class StatsSummary extends HTMLElement {
 
     // Écouter les événements de mise à jour
     eventManager.on('skill-updated', this.eventListener);
-    eventManager.on('carnet-updated', this.eventListener);
   }
 
   private getPeriodName(periode: string): string {

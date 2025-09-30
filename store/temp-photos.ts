@@ -77,31 +77,3 @@ export async function moveTemporaryPhotoToSkill(
   // Supprimer la photo temporaire
   await deleteTemporaryPhoto(tempPhotoId);
 }
-
-// Nettoyer les photos temporaires anciennes (plus de 7 jours)
-export async function cleanupOldTemporaryPhotos(): Promise<number> {
-  const photos = await getTemporaryPhotos();
-  const weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-  
-  let deletedCount = 0;
-  for (const photo of photos) {
-    if (photo.timestamp < weekAgo && photo.id) {
-      await deleteTemporaryPhoto(photo.id);
-      deletedCount++;
-    }
-  }
-  
-  return deletedCount;
-}
-
-// Compter les photos temporaires par élève
-export async function countTemporaryPhotosByStudent(): Promise<Record<ID, number>> {
-  const photos = await getTemporaryPhotos();
-  const counts: Record<ID, number> = {};
-  
-  for (const photo of photos) {
-    counts[photo.studentId] = (counts[photo.studentId] || 0) + 1;
-  }
-  
-  return counts;
-}
