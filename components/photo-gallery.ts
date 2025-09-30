@@ -1,4 +1,4 @@
-import { Photo, ID } from '../data/schema.js';
+import { Photo } from '../data/schema.js';
 import { compressImage, captureWithPreview, generatePhotoId } from '../utils/image.js';
 
 export class PhotoGallery extends HTMLElement {
