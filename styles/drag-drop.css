@@ -1,0 +1,106 @@
+/* Styles pour le drag & drop des domaines */
+
+.domain-item {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.domain-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.domain-item[draggable="true"] {
+  cursor: grab;
+}
+
+.domain-item[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.domain-item.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+  z-index: 1000;
+}
+
+.drop-indicator {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Indicateur de zone de drop */
+.domain-item.drag-over::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3B82F6, #8B5CF6);
+  border-radius: 2px;
+  animation: shimmer 1s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    opacity: 0.5;
+    transform: scaleX(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  100% {
+    opacity: 0.5;
+    transform: scaleX(0.8);
+  }
+}
+
+/* Amélioration visuelle des domain-card en mode drag */
+.domain-item domain-card {
+  transition: all 0.2s ease;
+}
+
+.domain-item.dragging domain-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  border: 2px dashed #3B82F6;
+}
+
+/* Styles pour le mode sombre */
+@media (prefers-color-scheme: dark) {
+  .domain-item.dragging domain-card {
+    background: rgba(31, 41, 55, 0.9);
+    border-color: #60A5FA;
+  }
+}
+
+/* Indicateur de réorganisation */
+.reorder-hint {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 1001;
+  pointer-events: none;
+  animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}

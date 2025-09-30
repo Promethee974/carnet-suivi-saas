@@ -1,0 +1,588 @@
+/* Styles généraux pour l'impression */
+@media screen {
+  .print-layout {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    padding-top: 80px; /* Espace pour le header fixe */
+    padding-bottom: 80px; /* Espace pour le footer fixe */
+  }
+}
+
+@media print {
+  .print-layout {
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 20mm;
+    font-family: 'Times New Roman', serif;
+    line-height: 1.4;
+    color: #000;
+  }
+  
+  /* Masquer les éléments non nécessaires à l'impression */
+  .no-print, .print-actions {
+    display: none !important;
+  }
+}
+
+/* En-tête fixe pour l'affichage écran */
+@media screen {
+  .print-screen-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 12px 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .print-screen-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 12px 16px;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+    z-index: 1000;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+  
+  .print-btn {
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  
+  .back-btn {
+    background-color: #e5e7eb;
+    color: #111827;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+/* Masquer le header/footer d'impression à l'écran */
+@media screen {
+  .print-header,
+  .print-footer {
+    display: none;
+  }
+}
+
+/* En-tête pour l'impression */
+.print-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #000;
+}
+
+.school-info h1 {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0 0 5px 0;
+}
+
+.school-info h2 {
+  font-size: 16px;
+  margin: 0;
+  color: #666;
+}
+
+.student-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.student-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #ddd;
+}
+
+.student-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+}
+
+.avatar-placeholder svg {
+  width: 40px;
+  height: 40px;
+}
+
+.student-details h3 {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0 0 5px 0;
+}
+
+.student-details p {
+  margin: 2px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+/* Informations du carnet */
+.carnet-info {
+  margin-bottom: 25px;
+  padding: 15px;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.info-item {
+  font-size: 14px;
+}
+
+/* Synthèse globale */
+.global-summary {
+  margin-bottom: 30px;
+  padding: 20px;
+  border: 2px solid #000;
+}
+
+.global-summary h2 {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0 0 15px 0;
+  text-align: center;
+}
+
+.summary-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 15px;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-number {
+  display: block;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.stat-label {
+  display: block;
+  font-size: 12px;
+  color: #666;
+}
+
+.stat-item.acquired .stat-number { color: #059669; }
+.stat-item.in-progress .stat-number { color: #2563eb; }
+.stat-item.not-acquired .stat-number { color: #dc2626; }
+.stat-item.total .stat-number { color: #000; }
+
+.progress-bar-print {
+  width: 100%;
+  height: 20px;
+  background: #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-fill-print {
+  height: 100%;
+  background: linear-gradient(90deg, #dc2626 0%, #f59e0b 25%, #2563eb 50%, #059669 75%);
+  transition: width 0.3s ease;
+}
+
+/* Domaines */
+.domain-section {
+  margin-bottom: 25px;
+  page-break-inside: avoid;
+}
+
+.domain-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+}
+
+.domain-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.domain-color {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+}
+
+.domain-title h2 {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.domain-stats {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Compétences */
+.skills-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.skill-item {
+  padding: 10px;
+  border: 1px solid #ddd;
+  background: #fff;
+  page-break-inside: avoid;
+}
+
+.skill-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 5px;
+}
+
+.skill-text {
+  font-size: 14px;
+  flex: 1;
+  margin-right: 10px;
+}
+
+.skill-status {
+  font-size: 12px;
+  font-weight: bold;
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.skill-status.acquired {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.skill-status.in-progress {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.skill-status.not-acquired {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.skill-comment {
+  margin-top: 8px;
+  padding: 8px;
+  background: #f9fafb;
+  border-left: 3px solid #d1d5db;
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* Synthèse personnalisée */
+.personal-synthesis {
+  margin-top: 30px;
+  page-break-before: always;
+}
+
+.personal-synthesis h2 {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.synthesis-section {
+  margin-bottom: 20px;
+}
+
+.synthesis-section h3 {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #374151;
+}
+
+.synthesis-section p {
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  min-height: 60px;
+}
+
+/* Pied de page */
+.print-footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #ccc;
+}
+
+.signatures {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.signature-block {
+  text-align: center;
+  width: 200px;
+}
+
+.signature-block p {
+  margin: 0 0 10px 0;
+  font-weight: bold;
+}
+
+.signature-line {
+  height: 1px;
+  background: #000;
+  margin-top: 40px;
+}
+
+.footer-note {
+  text-align: center;
+  font-size: 11px;
+  color: #666;
+  margin: 0;
+}
+
+/* Boutons d'action */
+.print-actions {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+  z-index: 1000;
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    /* color-adjust est obsolète, utiliser print-color-adjust */
+  }
+  
+  body {
+    font-size: 12pt;
+    line-height: 1.4;
+    color: #000 !important;
+    background: #fff !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-break {
+    page-break-before: always;
+  }
+  
+  .print-avoid-break {
+    page-break-inside: avoid;
+  }
+  
+  /* Header */
+  .print-header {
+    margin-bottom: 20pt;
+    border-bottom: 2pt solid #000;
+    padding-bottom: 10pt;
+  }
+  
+  .print-title {
+    font-size: 18pt;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10pt;
+  }
+  
+  .print-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10pt;
+    font-size: 11pt;
+  }
+  
+  /* Domaines */
+  .print-domain {
+    margin-bottom: 15pt;
+    page-break-inside: avoid;
+  }
+  
+  .print-domain-title {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-bottom: 8pt;
+    padding: 5pt;
+    background: #f0f0f0 !important;
+    border: 1pt solid #ccc;
+  }
+  
+  .print-progress {
+    font-size: 10pt;
+    margin-bottom: 5pt;
+  }
+  
+  /* Compétences */
+  .print-skill {
+    margin-bottom: 8pt;
+    padding: 5pt;
+    border: 1pt solid #ddd;
+    page-break-inside: avoid;
+  }
+  
+  .print-skill-text {
+    font-size: 11pt;
+    margin-bottom: 3pt;
+  }
+  
+  .print-skill-status {
+    font-size: 10pt;
+    font-weight: bold;
+  }
+  
+  .print-skill-comment {
+    font-size: 10pt;
+    font-style: italic;
+    margin-top: 3pt;
+  }
+  
+  .print-photos {
+    margin-top: 5pt;
+  }
+  
+  .print-photo-count {
+    font-size: 9pt;
+    color: #666;
+  }
+  
+  /* Status colors */
+  .status-a { color: #059669 !important; }
+  .status-ec { color: #2563eb !important; }
+  .status-na { color: #dc2626 !important; }
+  
+  /* Synthèse */
+  .print-synthese {
+    margin-top: 20pt;
+    page-break-before: always;
+  }
+  
+  .print-synthese-title {
+    font-size: 16pt;
+    font-weight: bold;
+    margin-bottom: 15pt;
+    text-align: center;
+  }
+  
+  .print-synthese-section {
+    margin-bottom: 15pt;
+  }
+  
+  .print-synthese-label {
+    font-size: 12pt;
+    font-weight: bold;
+    margin-bottom: 5pt;
+  }
+  
+  .print-synthese-content {
+    font-size: 11pt;
+    line-height: 1.5;
+    min-height: 40pt;
+    border: 1pt solid #ccc;
+    padding: 5pt;
+  }
+  
+  /* Footer */
+  .print-footer {
+    margin-top: 20pt;
+    padding-top: 10pt;
+    border-top: 1pt solid #ccc;
+    font-size: 9pt;
+    text-align: center;
+    color: #666;
+  }
+  
+  /* Hide interactive elements */
+  button,
+  input[type="file"],
+  .btn,
+  .modal-overlay,
+  nav,
+  .toolbar {
+    display: none !important;
+  }
+  
+  /* Adjust layout for print */
+  .container {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .grid {
+    display: block !important;
+  }
+  
+  .flex {
+    display: block !important;
+  }
+  
+  /* Page margins */
+  @page {
+    margin: 2cm;
+    size: A4;
+  }
+}
