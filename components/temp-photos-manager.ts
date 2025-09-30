@@ -212,10 +212,10 @@ export class TempPhotosManager extends HTMLElement {
 
             <!-- Sélection domaine -->
             <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label for="domain-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Domaine de compétence
               </label>
-              <select id="domain-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100">
+              <select id="domain-select" name="domain" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100">
                 <option value="">Choisir un domaine...</option>
                 ${domains.map(domain => `
                   <option value="${domain.id}">${domain.name}</option>
@@ -225,21 +225,22 @@ export class TempPhotosManager extends HTMLElement {
 
             <!-- Sélection compétence -->
             <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label for="skill-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Compétence spécifique
               </label>
-              <select id="skill-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100" disabled>
+              <select id="skill-select" name="skill" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100" disabled>
                 <option value="">Choisir d'abord un domaine...</option>
               </select>
             </div>
 
             <!-- Description optionnelle -->
             <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label for="photo-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Description (optionnelle)
               </label>
               <textarea 
                 id="photo-description" 
+                name="description"
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 resize-none h-20"
                 placeholder="Décrivez ce que montre cette photo..."
               ></textarea>
@@ -399,7 +400,15 @@ export class TempPhotosManager extends HTMLElement {
 
       // Recharger les données
       await this.loadData();
-
+      
+      // Déclencher un événement pour mettre à jour le compteur
+      const event = new CustomEvent('temp-photos-updated', {
+        detail: { count: this.tempPhotos.length }
+      });
+      document.dispatchEvent(event);
+      
+      console.log(`Photo ${this.selectedPhoto.id} attribuée avec succès à la compétence ${skillId}`);
+      
       // Message de succès
       this.showSuccessMessage('Photo attribuée avec succès !');
 
@@ -503,14 +512,22 @@ export class TempPhotosManager extends HTMLElement {
     const student = this.students.find(s => s.id === photo.studentId);
     const studentName = student ? `${student.prenom} ${student.nom}` : 'cet élève';
 
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer la photo de ${studentName} ?\n\nCette action est irréversible.`)) {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer la photo de ${studentName} ?\n\nCet action est irréversible.`)) {
       return;
     }
 
     try {
       await deleteTemporaryPhoto(photoId);
-      await this.loadData();
-      this.showSuccessMessage('Photo supprimée');
+      this.tempPhotos = this.tempPhotos.filter(p => p.id !== photoId);
+      this.render();
+      
+      // Déclencher un événement pour mettre à jour le compteur
+      const event = new CustomEvent('temp-photos-updated', {
+        detail: { count: this.tempPhotos.length }
+      });
+      document.dispatchEvent(event);
+      
+      console.log(`Photo ${photoId} supprimée avec succès`);
     } catch (error) {
       console.error('Erreur suppression photo:', error);
       alert('Erreur lors de la suppression de la photo');

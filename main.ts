@@ -29,41 +29,91 @@ async function initApp() {
     // Fonction de rendu basée sur la route
     function renderApp() {
       const route = router.getCurrentRoute();
-      console.log('📍 Route actuelle:', route);
+      console.group('🔄 Navigation');
+      console.log('Route actuelle:', route);
+      console.log('Contenu actuel de l\'application:', app.innerHTML.substring(0, 100) + '...');
 
-      switch (route.name) {
-        case 'home':
+      // Sauvegarder l'ancien contenu pour le débogage
+      const oldContent = app.innerHTML;
+      
+      try {
+        switch (route.name) {
+          case 'home':
+            console.log('Rendu du composant home-screen');
+            app.innerHTML = '<home-screen></home-screen>';
+            console.log('home-screen rendu avec succès');
+            break;
+          case 'students-list':
+            console.log('Rendu du composant students-list');
+            app.innerHTML = '<students-list></students-list>';
+            // Forcer la mise à jour du compteur après le rendu
+            setTimeout(async () => {
+              const studentsList = app.querySelector('students-list') as any;
+              if (studentsList && typeof studentsList.refreshPhotosCount === 'function') {
+                try {
+                  console.log('Mise à jour forcée du compteur de photos...');
+                  await studentsList.refreshPhotosCount();
+                  console.log('Compteur de photos mis à jour avec succès');
+                } catch (error) {
+                  console.error('Erreur lors de la mise à jour du compteur de photos:', error);
+                }
+              } else {
+                console.warn('Impossible de trouver le composant students-list ou la méthode refreshPhotosCount');
+              }
+            }, 100); // Petit délai pour laisser le composant s'initialiser
+            console.log('students-list rendu avec succès');
+            break;
+          case 'student-detail':
+            console.log(`Rendu du composant student-detail pour l'élève ${route.studentId}`);
+            app.innerHTML = `<student-detail student-id="${route.studentId}"></student-detail>`;
+            break;
+          case 'student-print':
+            console.log(`Rendu du composant student-print pour l'élève ${route.studentId}`);
+            app.innerHTML = `<student-print student-id="${route.studentId}"></student-print>`;
+            break;
+          case 'student-camera':
+            console.log('Rendu du composant student-camera');
+            app.innerHTML = '<student-camera></student-camera>';
+            console.log('student-camera rendu avec succès');
+            break;
+          case 'temp-photos':
+            console.log('Rendu du composant temp-photos-manager');
+            app.innerHTML = '<temp-photos-manager></temp-photos-manager>';
+            console.log('temp-photos-manager rendu avec succès');
+            break;
+          case 'backup-manager':
+            console.log('Rendu du composant backup-manager');
+            app.innerHTML = '<backup-manager></backup-manager>';
+            console.log('backup-manager rendu avec succès');
+            break;
+          default:
+          console.warn('Route inconnue, redirection vers la page d\'accueil');
           app.innerHTML = '<home-screen></home-screen>';
-          break;
-        case 'students-list':
-          app.innerHTML = '<students-list></students-list>';
-          break;
-        case 'student-detail':
-          app.innerHTML = `<student-detail student-id="${route.studentId}"></student-detail>`;
-          break;
-        case 'student-print':
-          app.innerHTML = `<student-print student-id="${route.studentId}"></student-print>`;
-          break;
-        case 'student-camera':
-          app.innerHTML = '<student-camera></student-camera>';
-          break;
-        case 'temp-photos':
-          app.innerHTML = '<temp-photos-manager></temp-photos-manager>';
-          break;
-        case 'backup-manager':
-          app.innerHTML = '<backup-manager></backup-manager>';
-          break;
-        default:
+        }
+        
+        console.log('Rendu terminé avec succès');
+      } catch (error) {
+        console.error('Erreur lors du rendu de la route:', error);
+        console.error('Ancien contenu:', oldContent);
+        console.error('Nouveau contenu:', app.innerHTML);
+        
+        // Tenter de récupérer en cas d'erreur
+        try {
           app.innerHTML = '<home-screen></home-screen>';
-          break;
+          console.log('Récupération: redirection vers la page d\'accueil');
+        } catch (recoveryError) {
+          console.error('Échec de la récupération:', recoveryError);
+        }
+      } finally {
+        console.groupEnd();
       }
     }
-
-    // Écouter les changements de route
-    router.addListener(renderApp);
     
     // Premier rendu
     renderApp();
+    
+    // Écouter les changements de route
+    router.onRouteChange(renderApp);
     
     console.log('✅ Application démarrée avec succès!');
     

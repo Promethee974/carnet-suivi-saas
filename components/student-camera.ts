@@ -171,8 +171,10 @@ export class StudentCamera extends HTMLElement {
             const portrait = student.photo || student.avatar || '';
             const initials = `${student.prenom.charAt(0)}${student.nom.charAt(0)}`;
             return `
-              <div class="group relative cursor-pointer" data-student-id="${student.id}">
-                <div class="relative w-full pb-[135%] overflow-hidden rounded-3xl shadow-md border border-transparent transition-all duration-200 group-hover:shadow-xl group-hover:border-blue-200 dark:group-hover:border-blue-500">
+              <div class="group relative cursor-pointer" data-student-id="${student.id}" id="student-${student.id}">
+                <input type="radio" id="student-radio-${student.id}" name="student-selection" class="sr-only" value="${student.id}">
+                <label for="student-radio-${student.id}" class="block cursor-pointer">
+                <div class="relative w-full pb-[135%] overflow-hidden rounded-3xl shadow-md border border-transparent transition-all duration-200 group-hover:shadow-xl group-hover:border-blue-200 dark:group-hover:border-blue-500" role="button" tabindex="0">
                   ${portrait ? `
                     <img src="${portrait}" alt="Portrait de ${student.prenom} ${student.nom}" class="absolute inset-0 h-full w-full object-cover" />
                   ` : `
@@ -186,6 +188,7 @@ export class StudentCamera extends HTMLElement {
                   </div>
                   <div class="absolute inset-0 rounded-3xl ring-0 ring-blue-400/0 group-hover:ring-4 group-hover:ring-blue-400/40 dark:group-hover:ring-blue-500/40 transition"></div>
                 </div>
+                </label>
               </div>
             `;
           }).join('')}
@@ -294,32 +297,99 @@ export class StudentCamera extends HTMLElement {
   }
 
   private async savePhoto(): Promise<void> {
+    console.group('savePhoto');
+    console.log('Début de la sauvegarde de la photo...');
+    
     if (!this.capturedPhoto) {
+      console.error('Aucune photo capturée');
       this.showError("Aucune photo à enregistrer.");
       return;
     }
     
     if (!this.selectedStudentId) {
+      console.error('Aucun élève sélectionné');
       this.showError("Aucun élève sélectionné.");
       return;
     }
     
     try {
-      // Ici, vous pouvez ajouter la logique pour sauvegarder la photo
-      // Par exemple, en l'envoyant à un serveur
-      console.log('Sauvegarde de la photo pour l\'élève', this.selectedStudentId);
+      console.log('Chargement du module temp-photos...');
+      const tempPhotosModule = await import('../store/temp-photos.js');
+      console.log('Module temp-photos chargé:', Object.keys(tempPhotosModule));
+      
+      // Vérifier que la fonction existe
+      if (typeof tempPhotosModule.saveTemporaryPhoto !== 'function') {
+        throw new Error('La fonction saveTemporaryPhoto n\'existe pas dans le module');
+      }
+      
+      console.log('Sauvegarde de la photo pour l\'élève:', this.selectedStudentId);
+      console.log('Taille de la photo:', this.capturedPhoto.length, 'caractères');
+      
+      // Sauvegarder la photo temporaire
+      const photoId = await tempPhotosModule.saveTemporaryPhoto({
+        studentId: this.selectedStudentId,
+        imageData: this.capturedPhoto,
+        timestamp: Date.now(),
+        description: 'Photo en attente d\'attribution'
+      });
+      
+      console.log('Photo sauvegardée avec ID:', photoId);
+      
+      // Vérifier que la photo a bien été sauvegardée
+      const savedPhoto = await tempPhotosModule.getTemporaryPhoto(photoId);
+      console.log('Photo récupérée après sauvegarde:', savedPhoto ? 'succès' : 'échec');
+      
+      if (!savedPhoto) {
+        throw new Error('La photo n\'a pas pu être récupérée après la sauvegarde');
+      }
+      
+      // Compter les photos temporaires
+      const allPhotos = await tempPhotosModule.getTemporaryPhotos();
+      console.log('Nombre total de photos temporaires:', allPhotos.length);
       
       // Afficher un message de succès
       this.showSuccess();
+      
+      // Déclencher un événement pour mettre à jour le compteur
+      console.log('Déclenchement de l\'événement temp-photos-updated');
+      const event = new CustomEvent('temp-photos-updated', { detail: { count: allPhotos.length } });
+      document.dispatchEvent(event);
       
       // Réinitialiser après la sauvegarde
       this.capturedPhoto = null;
       this.selectedStudentId = null;
       this.render();
       
-    } catch (error) {
+      // Rediriger vers la page d'accueil après un court délai
+      console.log('Préparation de la redirection vers la page d\'accueil...');
+      console.log('État du router:', router ? 'disponible' : 'indisponible');
+      
+      // Utiliser une promesse pour s'assurer que le rendu est terminé
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      console.log('Exécution de la redirection...');
+      try {
+        if (router && typeof router.navigateTo === 'function') {
+          console.log('Appel de router.navigateTo({ name: \'home\' })');
+          router.navigateTo({ name: 'home' });
+          console.log('Redirection effectuée avec succès');
+        } else {
+          console.error('Impossible de rediriger: router.navigateTo non disponible');
+          console.log('Méthode de secours: utilisation de window.location.hash');
+          window.location.hash = '/home';
+        }
+      } catch (error) {
+        console.error('Erreur lors de la redirection:', error);
+        // Méthode de secours
+        window.location.hash = '/home';
+      }
+      
+    } catch (error: unknown) {
       console.error('Erreur lors de la sauvegarde de la photo:', error);
-      this.showError('Erreur lors de la sauvegarde de la photo');
+      const errorMessage = error instanceof Error ? error.message : 'Impossible de sauvegarder la photo';
+      this.showError(`Erreur: ${errorMessage}`);
+    } finally {
+      console.groupEnd();
     }
   }
 

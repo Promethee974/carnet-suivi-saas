@@ -76,4 +76,7 @@ export async function moveTemporaryPhotoToSkill(
   
   // Supprimer la photo temporaire
   await deleteTemporaryPhoto(tempPhotoId);
+  
+  // Déclencher un événement pour mettre à jour le compteur
+  document.dispatchEvent(new CustomEvent('temp-photos-updated'));
 }

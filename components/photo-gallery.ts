@@ -1,4 +1,4 @@
-import { Photo } from '../data/schema.js';
+import { Photo, ID } from '../data/schema.js';
 import { compressImage, captureWithPreview, generatePhotoId } from '../utils/image.js';
 
 export class PhotoGallery extends HTMLElement {
@@ -249,6 +249,25 @@ export class PhotoGallery extends HTMLElement {
       caption: caption || undefined
     };
 
+    // Sauvegarder la photo comme temporaire
+    try {
+      const studentId = this.closest('student-detail')?.getAttribute('student-id');
+      if (studentId) {
+        const { saveTemporaryPhoto } = await import('../store/temp-photos.js');
+        await saveTemporaryPhoto({
+          studentId,
+          imageData: dataURL,
+          timestamp: Date.now(),
+          description: caption
+        });
+        
+        // Déclencher un événement pour mettre à jour le compteur
+        document.dispatchEvent(new CustomEvent('temp-photos-updated'));
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde de la photo temporaire:', error);
+    }
+
     this.photos.push(photo);
     this.render();
     
@@ -305,14 +324,52 @@ export class PhotoGallery extends HTMLElement {
     document.addEventListener('keydown', handleEscape);
   }
 
-  private deletePhoto(photoId: string) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette photo ?')) {
-      this.photos = this.photos.filter(p => p.id !== photoId);
-      this.render();
+  /**
+   * Trouve une photo temporaire correspondant à une photo de la galerie
+   * En comparant les données d'image (puisque les IDs sont différents)
+   */
+  private async findTemporaryPhoto(photoId: string) {
+    const photo = this.photos.find(p => p.id === photoId);
+    if (!photo) return null;
+
+    try {
+      const { getTemporaryPhotos } = await import('../store/temp-photos.js');
+      const tempPhotos = await getTemporaryPhotos();
       
-      if (this.onPhotoRemove) {
-        this.onPhotoRemove(photoId);
+      // Trouver une photo temporaire avec les mêmes données d'image
+      return tempPhotos.find(temp => temp.imageData === photo.dataURL) || null;
+    } catch (error) {
+      console.error('Erreur lors de la recherche de la photo temporaire:', error);
+      return null;
+    }
+  }
+
+  private async deletePhoto(photoId: string) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette photo ?')) {
+      return;
+    }
+
+    // Supprimer la photo de la liste locale
+    this.photos = this.photos.filter(p => p.id !== photoId);
+    this.render();
+    
+    // Notifier le composant parent
+    if (this.onPhotoRemove) {
+      this.onPhotoRemove(photoId);
+    }
+
+    // Essayer de supprimer la photo temporaire correspondante
+    try {
+      const tempPhoto = await this.findTemporaryPhoto(photoId);
+      if (tempPhoto) {
+        const { deleteTemporaryPhoto } = await import('../store/temp-photos.js');
+        await deleteTemporaryPhoto(tempPhoto.id!);
+        console.log('Photo temporaire supprimée avec succès');
+        // Déclencher un événement pour mettre à jour le compteur
+        document.dispatchEvent(new CustomEvent('temp-photos-updated'));
       }
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la photo temporaire:', error);
     }
   }
 }
