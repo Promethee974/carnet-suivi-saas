@@ -33,23 +33,21 @@ export class TempPhotosManager extends HTMLElement {
     const filteredPhotos = this.selectedStudentId 
       ? this.tempPhotos.filter(p => p.studentId === this.selectedStudentId)
       : this.tempPhotos;
-
     this.innerHTML = `
       <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
         <!-- En-tête -->
         <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
           <div class="px-4 py-4">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center">
               <button id="back-btn" class="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Retour à la liste
               </button>
-              <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mx-auto">
                 📸 Photos en attente (${this.tempPhotos.length})
               </h1>
-              <div class="text-sm text-gray-500 dark:text-gray-400">
+              <div class="text-sm text-gray-500 dark:text-gray-400 ml-auto">
                 ${this.tempPhotos.length} photo${this.tempPhotos.length > 1 ? 's' : ''} à attribuer
               </div>
             </div>
@@ -281,11 +279,24 @@ export class TempPhotosManager extends HTMLElement {
     `;
   }
 
+  private handleBackButtonClick = () => {
+    // Ramener au mode élève (caméra)
+    router.navigateTo({ name: 'student-camera' });
+  }
+
   private attachEvents() {
-    // Retour
-    this.querySelector('#back-btn')?.addEventListener('click', () => {
-      router.goToStudentsList();
-    });
+    // Retour vers la liste des élèves du mode enseignant
+    const backButton = this.querySelector('#back-btn');
+    if (backButton) {
+      // Supprimer d'abord les anciens écouteurs pour éviter les doublons
+      const newBackButton = backButton.cloneNode(true);
+      backButton.parentNode?.replaceChild(newBackButton, backButton);
+      newBackButton.addEventListener('click', () => {
+        if (router && typeof router.navigateTo === 'function') {
+          router.navigateTo({ name: 'students-list' });
+        }
+      });
+    }
 
     // Filtre par élève
     this.querySelector('#student-filter')?.addEventListener('change', (e) => {
@@ -497,7 +508,7 @@ export class TempPhotosManager extends HTMLElement {
     skillSelect.value = '';
     skillSelect.disabled = true;
     skillSelect.innerHTML = '<option value="">Choisir d\'abord un domaine...</option>';
-    descriptionTextarea.value = photo.description || '';
+    descriptionTextarea.value = ''; // Toujours initialiser à vide
 
     this.updateConfirmButton();
 
@@ -507,18 +518,26 @@ export class TempPhotosManager extends HTMLElement {
 
   public async deletePhoto(photoId: string) {
     const photo = this.tempPhotos.find(p => p.id === photoId);
-    if (!photo) return;
+    if (!photo) {
+      console.error(`Photo non trouvée: ${photoId}`);
+      return;
+    }
 
     const student = this.students.find(s => s.id === photo.studentId);
     const studentName = student ? `${student.prenom} ${student.nom}` : 'cet élève';
 
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer la photo de ${studentName} ?\n\nCet action est irréversible.`)) {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer la photo de ${studentName} ?\n\nCette action est irréversible.`)) {
       return;
     }
 
     try {
+      console.log(`Tentative de suppression de la photo: ${photoId}`);
       await deleteTemporaryPhoto(photoId);
+      
+      // Mettre à jour la liste des photos
       this.tempPhotos = this.tempPhotos.filter(p => p.id !== photoId);
+      
+      // Mettre à jour l'affichage
       this.render();
       
       // Déclencher un événement pour mettre à jour le compteur
@@ -529,8 +548,8 @@ export class TempPhotosManager extends HTMLElement {
       
       console.log(`Photo ${photoId} supprimée avec succès`);
     } catch (error) {
-      console.error('Erreur suppression photo:', error);
-      alert('Erreur lors de la suppression de la photo');
+      console.error('Erreur lors de la suppression de la photo:', error);
+      alert(`Erreur lors de la suppression de la photo: ${error.message}`);
     }
   }
 }

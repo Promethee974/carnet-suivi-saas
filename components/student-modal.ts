@@ -155,7 +155,7 @@ export class StudentModal extends HTMLElement {
                 Annuler
               </button>
               <button type="submit" class="btn-primary flex-1">
-                ${this.isEditing ? 'Modifier' : 'Créer'}
+                ${this.isEditing ? 'Enregistrer' : 'Créer'}
               </button>
             </div>
           </form>

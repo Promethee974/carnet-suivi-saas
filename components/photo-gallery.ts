@@ -249,25 +249,6 @@ export class PhotoGallery extends HTMLElement {
       caption: caption || undefined
     };
 
-    // Sauvegarder la photo comme temporaire
-    try {
-      const studentId = this.closest('student-detail')?.getAttribute('student-id');
-      if (studentId) {
-        const { saveTemporaryPhoto } = await import('../store/temp-photos.js');
-        await saveTemporaryPhoto({
-          studentId,
-          imageData: dataURL,
-          timestamp: Date.now(),
-          description: caption
-        });
-        
-        // Déclencher un événement pour mettre à jour le compteur
-        document.dispatchEvent(new CustomEvent('temp-photos-updated'));
-      }
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde de la photo temporaire:', error);
-    }
-
     this.photos.push(photo);
     this.render();
     

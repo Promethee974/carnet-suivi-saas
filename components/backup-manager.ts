@@ -7,7 +7,11 @@ export class BackupManager extends HTMLElement {
   private autoBackups: BackupData[] = [];
 
   connectedCallback() {
-    this.loadData();
+    this.refreshView();
+  }
+
+  private async refreshView() {
+    await this.loadData();
     this.render();
     this.attachEvents();
   }
@@ -149,7 +153,7 @@ export class BackupManager extends HTMLElement {
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
               </svg>
-              Actualiser
+              Sauvegarder
             </button>
           </div>
 
@@ -251,9 +255,43 @@ export class BackupManager extends HTMLElement {
 
     // Actualiser
     this.querySelector('#refresh-btn')?.addEventListener('click', async () => {
-      await this.loadData();
-      this.render();
-      this.attachEvents();
+      if (this.isLoading) return;
+
+      const refreshBtn = this.querySelector('#refresh-btn') as HTMLButtonElement | null;
+      refreshBtn?.setAttribute('disabled', 'true');
+      const originalText = refreshBtn?.innerHTML;
+
+      if (refreshBtn) {
+        refreshBtn.innerHTML = `
+          <svg class="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Sauvegarde...`;
+      }
+
+      this.isLoading = true;
+      this.updateLoadingState();
+
+      try {
+        await BackupService.createAutoBackup();
+        this.isLoading = false;
+        await this.refreshView();
+        this.updateLoadingState();
+        this.showSuccess('✅ Sauvegarde créée avec succès');
+      } catch (error) {
+        console.error('Erreur lors de la sauvegarde manuelle:', error);
+        this.showError('❌ Impossible de créer une sauvegarde');
+      } finally {
+        this.isLoading = false;
+        this.updateLoadingState();
+        const newRefreshBtn = this.querySelector('#refresh-btn') as HTMLButtonElement | null;
+        if (newRefreshBtn) {
+          newRefreshBtn.removeAttribute('disabled');
+          if (originalText) {
+            newRefreshBtn.innerHTML = originalText;
+          }
+        }
+      }
     });
 
     // Restaurer sauvegardes auto

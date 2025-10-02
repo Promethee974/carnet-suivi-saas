@@ -1,5 +1,6 @@
 import { getAllStudents } from '../store/students-repo.js';
-import { Student } from '../data/schema.js';
+import { Student, Photo } from '../data/schema.js';
+import { getTemporaryPhotos } from '../store/temp-photos.js';
 import { router } from '../utils/router';
 
 declare global {
@@ -16,6 +17,7 @@ export class StudentCamera extends HTMLElement {
   private fileInput: HTMLInputElement | null = null;
   private canvas: HTMLCanvasElement | null = null;
   private selectedStudentId: string | null = null;
+  private pendingTempPhotosCount = 0;
 
   connectedCallback() {
     this.loadStudents();
@@ -23,6 +25,22 @@ export class StudentCamera extends HTMLElement {
 
   disconnectedCallback() {
     this.stopCamera();
+  }
+
+  // Mise à jour du compteur de photos temporaires
+  private async updateTempPhotosCount(): Promise<void> {
+    try {
+      const tempPhotos = await getTemporaryPhotos();
+      this.pendingTempPhotosCount = tempPhotos.length;
+
+      const countElements = this.querySelectorAll('.temp-photos-count');
+      countElements.forEach(element => {
+        element.textContent = this.pendingTempPhotosCount.toString();
+        element.classList.toggle('hidden', this.pendingTempPhotosCount === 0);
+      });
+    } catch (error) {
+      console.error('Erreur lors du comptage des photos temporaires:', error);
+    }
   }
 
   private async loadStudents() {
@@ -64,8 +82,13 @@ export class StudentCamera extends HTMLElement {
     }
   }
 
-  private render(): void {
+  private async render(): Promise<void> {
     try {
+      // Vérifier s'il y a des photos en attente
+      const tempPhotos = await getTemporaryPhotos();
+      this.pendingTempPhotosCount = tempPhotos.length;
+      const hasTempPhotos = this.pendingTempPhotosCount > 0;
+      
       // Si on a une photo capturée, afficher l'aperçu
       if (this.capturedPhoto) {
         this.innerHTML = this.renderPhotoReview();
@@ -79,17 +102,32 @@ export class StudentCamera extends HTMLElement {
       // Sinon, afficher la sélection d'élève
       else {
         this.innerHTML = `
-          <div id="student-selection-view" class="bg-white dark:bg-gray-900 min-h-screen">
+          <div id="student-selection-view" class="bg-white min-h-screen">
             <div class="max-w-5xl mx-auto min-h-screen flex flex-col">
-              <header class="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-4">
-                <button id="back-btn" class="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 transition-colors">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                  <span>Retour</span>
-                </button>
-                <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Mode élève</h1>
-                <span class="text-sm text-gray-400 dark:text-gray-500">Trombinoscope</span>
+              <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+                <div class="px-4 py-4">
+                  <div class="flex items-center">
+                    <button id="back-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                    <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mx-auto">
+                      Mode élève
+                    </h1>
+                    <div class="flex items-center gap-2">
+                      <div class="relative opacity-50 cursor-not-allowed" title="Photos en attente">
+                        <div class="btn-icon">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          </svg>
+                          <span class="temp-photos-count absolute -top-2 -right-2 px-2 py-1 bg-gray-500 text-white text-xs rounded-full ${hasTempPhotos ? '' : 'hidden'}">
+                            ${this.pendingTempPhotosCount}
+                          </span>
+                        </div>
+                      </div>
+                  </div>
+                </div>
               </header>
               <main class="flex-1 px-4 py-6">
                 ${this.renderStudentSelection()}
@@ -130,7 +168,18 @@ export class StudentCamera extends HTMLElement {
               <span>Retour</span>
             </button>
             <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Aperçu de la photo</h1>
-            <span class="text-sm text-gray-400 dark:text-gray-500">${studentName}</span>
+            <div class="flex items-center gap-3">
+              <div class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 border border-gray-200 dark:border-gray-700 text-xs font-medium rounded-md bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                <svg class="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Photos en attente</span>
+                <span class="temp-photos-count inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold ${this.pendingTempPhotosCount > 0 ? '' : 'hidden'}">
+                  ${this.pendingTempPhotosCount}
+                </span>
+              </div>
+              <span class="text-sm text-gray-400 dark:text-gray-500">${studentName}</span>
+            </div>
           </header>
           <main class="flex-1 px-4 py-6 space-y-6">
             <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-center aspect-[3/4] sm:aspect-[4/3] overflow-hidden">
@@ -204,15 +253,22 @@ export class StudentCamera extends HTMLElement {
     return `
       <div class="bg-white dark:bg-gray-900 min-h-screen">
         <div class="max-w-5xl mx-auto min-h-screen flex flex-col">
-          <header class="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-4">
-            <button id="back-btn" class="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              <span>Retour</span>
-            </button>
-            <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Prendre une photo</h1>
-            <span class="text-sm text-gray-400 dark:text-gray-500">${studentName}</span>
+          <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+            <div class="px-4 py-4">
+              <div class="flex items-center">
+                <button id="back-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+                <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mx-auto">
+                  Prendre une photo
+                </h1>
+                <div class="text-sm text-gray-500 dark:text-gray-400">
+                  ${studentName}
+                </div>
+              </div>
+            </div>
           </header>
           <main class="flex-1 px-4 py-6 space-y-6">
             <div class="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600 dark:text-gray-300">
@@ -249,7 +305,7 @@ export class StudentCamera extends HTMLElement {
                 Prendre la photo
               </button>
               <button id="upload-btn" class="px-6 py-3 rounded-full bg-white text-blue-600 font-semibold border border-blue-200 shadow-sm hover:bg-blue-50 transition-colors">
-                Importer une image
+                Importer
               </button>
             </div>
           </main>
@@ -263,7 +319,7 @@ export class StudentCamera extends HTMLElement {
 
   private capturePhoto(): void {
     if (!this.video) {
-      this.showError("La caméra n'est pas prête. Veuillez réessayer.");
+      console.log("La caméra n'est pas prête. Veuillez réessayer.");
       return;
     }
     
@@ -276,7 +332,7 @@ export class StudentCamera extends HTMLElement {
     const height = this.video.videoHeight || this.video.clientHeight;
 
     if (!width || !height) {
-      this.showError("La caméra n'est pas encore prête. Patientez un instant puis réessayez.");
+      console.log("La caméra n'est pas encore prête. Patientez un instant puis réessayez.");
       return;
     }
 
@@ -355,34 +411,12 @@ export class StudentCamera extends HTMLElement {
       const event = new CustomEvent('temp-photos-updated', { detail: { count: allPhotos.length } });
       document.dispatchEvent(event);
       
-      // Réinitialiser après la sauvegarde
+      // Réinitialiser uniquement la photo capturée
       this.capturedPhoto = null;
-      this.selectedStudentId = null;
+      // Ne pas réinitialiser le selectedStudentId pour rester sur le même élève
       this.render();
       
-      // Rediriger vers la page d'accueil après un court délai
-      console.log('Préparation de la redirection vers la page d\'accueil...');
-      console.log('État du router:', router ? 'disponible' : 'indisponible');
-      
-      // Utiliser une promesse pour s'assurer que le rendu est terminé
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      console.log('Exécution de la redirection...');
-      try {
-        if (router && typeof router.navigateTo === 'function') {
-          console.log('Appel de router.navigateTo({ name: \'home\' })');
-          router.navigateTo({ name: 'home' });
-          console.log('Redirection effectuée avec succès');
-        } else {
-          console.error('Impossible de rediriger: router.navigateTo non disponible');
-          console.log('Méthode de secours: utilisation de window.location.hash');
-          window.location.hash = '/home';
-        }
-      } catch (error) {
-        console.error('Erreur lors de la redirection:', error);
-        // Méthode de secours
-        window.location.hash = '/home';
-      }
+      console.log('Photo sauvegardée avec succès, prêt pour une nouvelle capture');
       
     } catch (error: unknown) {
       console.error('Erreur lors de la sauvegarde de la photo:', error);
@@ -404,9 +438,7 @@ export class StudentCamera extends HTMLElement {
     this.fileInput = document.createElement('input');
     this.fileInput.type = 'file';
     this.fileInput.accept = 'image/*';
-    if ('capture' in this.fileInput) {
-      (this.fileInput as any).capture = 'environment';
-    }
+    // Suppression de l'attribut capture pour permettre la sélection de fichiers existants
     this.fileInput.style.display = 'none';
     
     // Ajouter l'input au body
@@ -458,10 +490,8 @@ export class StudentCamera extends HTMLElement {
 
       this.stream = await navigator.mediaDevices.getUserMedia(constraints);
       
-      // Initialiser this.video s'il n'existe pas encore
-      if (!this.video) {
-        this.video = this.querySelector('#camera-preview');
-      }
+      // Toujours récupérer la référence de la vidéo après un nouveau rendu
+      this.video = this.querySelector('#camera-preview');
       
       if (this.video) {
         this.video.srcObject = this.stream;
@@ -490,8 +520,7 @@ export class StudentCamera extends HTMLElement {
           if (this.video) {
             this.video.addEventListener('playing', onPlaying);
             this.video.play().catch(e => {
-              console.error('Erreur lecture vidéo:', e);
-              this.showError("Impossible de démarrer la caméra. Vérifiez les permissions.");
+              console.log('Erreur lecture vidéo (peut être normal selon les permissions):', e);
               if (loadingElement) {
                 loadingElement.classList.add('hidden');
               }
@@ -501,13 +530,7 @@ export class StudentCamera extends HTMLElement {
       }
     } catch (error) {
       console.error('Erreur initialisation caméra:', error);
-      this.showError("Impossible d'accéder à la caméra. Vérifiez les permissions ou utilisez le bouton d'import.");
-      
-      // Afficher le message d'erreur dans l'interface
-      const errorElement = this.querySelector('#camera-error');
-      if (errorElement) {
-        errorElement.classList.remove('hidden');
-      }
+      // Ne pas afficher de message d'erreur immédiat pour laisser le temps à l'utilisateur d'accepter les permissions
     }
   }
   
@@ -554,7 +577,7 @@ export class StudentCamera extends HTMLElement {
         if (input) input.click();
       });
     }
-    
+
     // Gestionnaire pour le bouton de reprise
     const retakeBtn = this.querySelector('#retake-btn');
     if (retakeBtn) {
@@ -570,7 +593,7 @@ export class StudentCamera extends HTMLElement {
       saveBtn.addEventListener('click', () => this.savePhoto());
     }
     
-    // Gestionnaire pour le bouton de retour
+    // Gestionnaire pour le bouton de retour vers l'accueil
     const backBtn = this.querySelector('#back-btn');
     if (backBtn) {
       backBtn.addEventListener('click', () => {
