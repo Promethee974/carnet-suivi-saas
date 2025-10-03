@@ -116,7 +116,7 @@ export class PhotoGallery extends HTMLElement {
         const photoId = button.dataset.photoId;
         
         if (action === 'view' && photoId) {
-          this.viewPhoto(photoId);
+          this.viewPhoto(photoId, e);
         } else if (action === 'delete' && photoId) {
           this.deletePhoto(photoId);
         }
@@ -260,7 +260,18 @@ export class PhotoGallery extends HTMLElement {
     }
   }
 
-  private viewPhoto(photoId: string) {
+  private viewPhoto(photoId: string, event?: Event) {
+    // Empêcher la propagation de l'événement pour éviter les déclenchements multiples
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+
+    // Vérifier si une modale est déjà ouverte
+    if (document.querySelector('.modal-overlay')) {
+      return;
+    }
+
     const photo = this.photos.find(p => p.id === photoId);
     if (!photo) return;
 
