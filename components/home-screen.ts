@@ -18,10 +18,10 @@ export class HomeScreen extends HTMLElement {
               </svg>
             </div>
             <h1 class="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-              Carnet de Suivi GS
+              Carnet de Suivi Maternelle
             </h1>
             <p class="text-xl text-gray-600 dark:text-gray-400">
-              Grande Section - Programmes 2025
+              Programmes 2025
             </p>
           </div>
 
@@ -36,7 +36,7 @@ export class HomeScreen extends HTMLElement {
                   </svg>
                 </div>
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                  👩‍🏫 Enseignant
+                  Enseignant
                 </h2>
                 <p class="text-gray-600 dark:text-gray-400 mb-6">
                   Accédez à la liste des élèves pour gérer les carnets de suivi et évaluer les compétences
@@ -74,7 +74,7 @@ export class HomeScreen extends HTMLElement {
                   </svg>
                 </div>
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                  🧒 Élève
+                  Élève
                 </h2>
                 <p class="text-gray-600 dark:text-gray-400 mb-6">
                   Prends une photo de tes réalisations pour documenter tes apprentissages

@@ -80,7 +80,7 @@ export class StudentDetail extends HTMLElement {
       <div class="min-h-screen flex flex-col">
         <!-- Navigation -->
         <!-- En-tête avec informations élève -->
-        <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 pt-safe-top">
           <!-- Barre de navigation simple -->
           <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
             <button id="back-btn" class="btn-icon" title="Retour à la liste">
@@ -107,13 +107,13 @@ export class StudentDetail extends HTMLElement {
                   ${this.student.prenom} ${this.student.nom}
                 </h1>
                 <p class="text-base text-gray-600 dark:text-gray-400 mb-2">
-                  Carnet de suivi GS - Programmes 2025
+                  Carnet de suivi Maternelle - Programmes 2025
                 </p>
                 ${this.carnet ? `
                   <div class="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
-                    <span>📅 ${this.carnet.meta.annee}-${parseInt(this.carnet.meta.annee) + 1}</span>
-                    <span>👩‍🏫 ${this.carnet.meta.enseignant}</span>
-                    <span>📋 Période ${this.carnet.meta.periode}</span>
+                    <span> ${this.carnet.meta.annee}-${parseInt(this.carnet.meta.annee) + 1}</span>
+                    <span> ${this.carnet.meta.enseignant}</span>
+                    <span> Période ${this.carnet.meta.periode}</span>
                   </div>
                 ` : ''}
               </div>

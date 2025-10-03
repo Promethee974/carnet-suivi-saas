@@ -36,7 +36,7 @@ export class TempPhotosManager extends HTMLElement {
     this.innerHTML = `
       <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
         <!-- En-tête -->
-        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 pt-safe-top">
           <div class="px-4 py-4">
             <div class="flex items-center">
               <button id="back-btn" class="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
@@ -45,7 +45,7 @@ export class TempPhotosManager extends HTMLElement {
                 </svg>
               </button>
               <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mx-auto">
-                📸 Photos en attente (${this.tempPhotos.length})
+                Photos en attente (${this.tempPhotos.length})
               </h1>
               <div class="text-sm text-gray-500 dark:text-gray-400 ml-auto">
                 ${this.tempPhotos.length} photo${this.tempPhotos.length > 1 ? 's' : ''} à attribuer
@@ -81,7 +81,7 @@ export class TempPhotosManager extends HTMLElement {
         </p>
         <div class="space-y-4">
           <button onclick="location.hash='#/camera'" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-6 rounded-lg transition-colors">
-            📸 Interface élève
+            Interface élève
           </button>
           <p class="text-sm text-gray-500 dark:text-gray-400">
             Dirigez les élèves vers l'interface de prise de photos
@@ -402,7 +402,8 @@ export class TempPhotosManager extends HTMLElement {
       await moveTemporaryPhotoToSkill(
         this.selectedPhoto.id!,
         this.selectedPhoto.studentId,
-        skillId
+        skillId,
+        description || undefined
       );
 
       // Fermer la modale
@@ -508,7 +509,7 @@ export class TempPhotosManager extends HTMLElement {
     skillSelect.value = '';
     skillSelect.disabled = true;
     skillSelect.innerHTML = '<option value="">Choisir d\'abord un domaine...</option>';
-    descriptionTextarea.value = ''; // Toujours initialiser à vide
+    descriptionTextarea.value = this.selectedPhoto.description || '';
 
     this.updateConfirmButton();
 

@@ -53,7 +53,8 @@ export async function deleteTemporaryPhoto(photoId: string): Promise<void> {
 export async function moveTemporaryPhotoToSkill(
   tempPhotoId: string, 
   studentId: ID, 
-  skillId: string
+  skillId: string,
+  description?: string
 ): Promise<void> {
   const tempPhoto = await getTemporaryPhoto(tempPhotoId);
   if (!tempPhoto) {
@@ -64,11 +65,13 @@ export async function moveTemporaryPhotoToSkill(
   const { addPhotoToSkill } = await import('./repo.js');
   
   // Créer la photo définitive
+  const caption = (description ?? tempPhoto.description ?? '').trim();
+
   const photo = {
     id: `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     dataURL: tempPhoto.imageData,
     createdAt: tempPhoto.timestamp,
-    caption: tempPhoto.description || ''
+    caption: caption || undefined
   };
 
   // Ajouter à la compétence

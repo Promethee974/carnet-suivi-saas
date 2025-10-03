@@ -104,7 +104,7 @@ export class StudentCamera extends HTMLElement {
         this.innerHTML = `
           <div id="student-selection-view" class="bg-white min-h-screen">
             <div class="max-w-5xl mx-auto min-h-screen flex flex-col">
-              <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+              <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 pt-safe-top">
                 <div class="px-4 py-4">
                   <div class="flex items-center">
                     <button id="back-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors">
@@ -160,25 +160,21 @@ export class StudentCamera extends HTMLElement {
     return `
       <div class="bg-white dark:bg-gray-900 min-h-screen">
         <div class="max-w-5xl mx-auto min-h-screen flex flex-col">
-          <header class="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-4">
-            <button id="back-btn" class="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              <span>Retour</span>
-            </button>
-            <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Aperçu de la photo</h1>
-            <div class="flex items-center gap-3">
-              <div class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 border border-gray-200 dark:border-gray-700 text-xs font-medium rounded-md bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                <svg class="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span>Photos en attente</span>
-                <span class="temp-photos-count inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold ${this.pendingTempPhotosCount > 0 ? '' : 'hidden'}">
-                  ${this.pendingTempPhotosCount}
-                </span>
+          <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 pt-safe-top">
+            <div class="px-4 py-4">
+              <div class="flex items-center">
+                <button id="back-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+                <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mx-auto flex items-center gap-2">
+                  Aperçu de la photo
+                </h1>
+                <div class="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+                  <span class="text-sm text-gray-500 dark:text-gray-400">${studentName}</span>
+                </div>
               </div>
-              <span class="text-sm text-gray-400 dark:text-gray-500">${studentName}</span>
             </div>
           </header>
           <main class="flex-1 px-4 py-6 space-y-6">
@@ -253,7 +249,7 @@ export class StudentCamera extends HTMLElement {
     return `
       <div class="bg-white dark:bg-gray-900 min-h-screen">
         <div class="max-w-5xl mx-auto min-h-screen flex flex-col">
-          <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+          <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 pt-safe-top">
             <div class="px-4 py-4">
               <div class="flex items-center">
                 <button id="back-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors">
@@ -385,8 +381,7 @@ export class StudentCamera extends HTMLElement {
       const photoId = await tempPhotosModule.saveTemporaryPhoto({
         studentId: this.selectedStudentId,
         imageData: this.capturedPhoto,
-        timestamp: Date.now(),
-        description: 'Photo en attente d\'attribution'
+        timestamp: Date.now()
       });
       
       console.log('Photo sauvegardée avec ID:', photoId);
@@ -598,6 +593,19 @@ export class StudentCamera extends HTMLElement {
     if (backBtn) {
       backBtn.addEventListener('click', () => {
         this.stopCamera();
+
+        if (this.capturedPhoto) {
+          this.capturedPhoto = null;
+          this.render();
+          return;
+        }
+
+        if (this.selectedStudentId) {
+          this.selectedStudentId = null;
+          this.render();
+          return;
+        }
+
         if (router && typeof router.navigateTo === 'function') {
           router.navigateTo({ name: 'home' });
         }

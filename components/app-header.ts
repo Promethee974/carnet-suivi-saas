@@ -28,7 +28,7 @@ export class AppHeader extends HTMLElement {
     const carnet = (await getCarnet(this.studentId)) || (await initializeCarnet(this.studentId));
 
     this.innerHTML = `
-      <header class="border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur sticky top-0 z-40">
+      <header class="border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur sticky top-0 z-40 pt-safe-top">
         <div class="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             <label class="relative block">

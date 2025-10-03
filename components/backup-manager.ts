@@ -29,7 +29,7 @@ export class BackupManager extends HTMLElement {
     this.innerHTML = `
       <div class="min-h-screen">
         <!-- Header simple avec retour -->
-        <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 pt-safe-top">
           <div class="max-w-4xl mx-auto px-4 py-3">
             <button id="back-btn" class="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

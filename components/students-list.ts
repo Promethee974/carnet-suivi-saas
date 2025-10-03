@@ -66,6 +66,10 @@ export class StudentsList extends HTMLElement {
     }
   }
 
+  public async refreshPhotosCount(): Promise<void> {
+    await this.updateTempPhotosCount();
+  }
+
   // Application des filtres de recherche et du tri
   private async applyFilters(): Promise<void> {
     const query = this.searchQuery.trim().toLowerCase();
@@ -167,7 +171,7 @@ export class StudentsList extends HTMLElement {
   private render(): void {
     this.innerHTML = `
       <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 pt-safe-top">
           <div class="px-4 py-4">
             <div class="flex items-center justify-between">
               <button id="back-home-btn" class="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
@@ -176,7 +180,7 @@ export class StudentsList extends HTMLElement {
                 </svg>
               </button>
               <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                👩‍🏫 Mes Élèves (${this.students.length})
+                Mes Élèves (${this.students.length})
               </h1>
               <div class="flex items-center gap-2">
                 <button id="temp-photos-btn" class="btn-icon relative" title="Photos sauvegardées">
@@ -207,7 +211,7 @@ export class StudentsList extends HTMLElement {
         </header>
 
         <main class="container mx-auto px-4 py-6">
-          <div class="flex flex-col sm:flex-row gap-4">
+          <div class="flex flex-col sm:flex-row gap-4 mb-6">
             <div class="flex-1">
               <input 
                 type="text" 
@@ -400,9 +404,18 @@ export class StudentsList extends HTMLElement {
     const searchInput = this.querySelector<HTMLInputElement>('#search-input');
     if (searchInput) {
       searchInput.addEventListener('input', async (event) => {
-        this.searchQuery = (event.target as HTMLInputElement).value;
+        const target = event.target as HTMLInputElement;
+        this.searchQuery = target.value;
+        const caretPosition = target.selectionStart ?? target.value.length;
+
         await this.applyFilters();
         this.render();
+
+        const updatedInput = this.querySelector<HTMLInputElement>('#search-input');
+        if (updatedInput) {
+          updatedInput.focus();
+          updatedInput.setSelectionRange(caretPosition, caretPosition);
+        }
       });
     }
 
