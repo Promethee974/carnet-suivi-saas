@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  carnet-suivi:
+    image: nginx:alpine
+    container_name: carnet-suivi
+    restart: always
+    volumes:
+      - ./dist:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.carnet.rule=Host(`carnet.nava.re`)"
+      - "traefik.http.routers.carnet.entrypoints=websecure"
+      - "traefik.http.routers.carnet.tls.certresolver=myresolver"
+      - "traefik.http.services.carnet.loadbalancer.server.port=80"
+    networks:
+      - web
+
+networks:
+  web:
+    external: true

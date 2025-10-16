@@ -1,0 +1,348 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// AUTHENTIFICATION & UTILISATEURS
+// ============================================
+
+enum UserRole {
+  TEACHER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  SCHOOL
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIALING
+}
+
+enum ClassLevel {
+  PS
+  MS
+  GS
+}
+
+model User {
+  id                String              @id @default(cuid())
+  email             String              @unique
+  passwordHash      String              @map("password_hash")
+  firstName         String?             @map("first_name")
+  lastName          String?             @map("last_name")
+  role              UserRole            @default(TEACHER)
+  classLevel        ClassLevel?         @map("class_level")
+  subscriptionTier  SubscriptionTier    @default(FREE) @map("subscription_tier")
+  emailVerified     Boolean             @default(false) @map("email_verified")
+  emailVerifiedAt   DateTime?           @map("email_verified_at")
+
+  // Métadonnées
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  lastLoginAt       DateTime?           @map("last_login_at")
+
+  // Relations
+  students          Student[]
+  carnets           Carnet[]
+  photos            Photo[]
+  tempPhotos        TempPhoto[]         @relation("UserTempPhotos")
+  activityLogs      ActivityLog[]
+  backups           Backup[]
+  organizations     OrganizationMember[]
+  subscription      Subscription?
+  preferences       UserPreferences?
+
+  @@map("users")
+}
+
+model Organization {
+  id                String              @id @default(cuid())
+  name              String
+  slug              String              @unique
+  subscriptionPlan  SubscriptionTier    @default(SCHOOL) @map("subscription_plan")
+  maxStudents       Int                 @default(100) @map("max_students")
+  logoUrl           String?             @map("logo_url")
+
+  // Billing
+  stripeCustomerId  String?             @unique @map("stripe_customer_id")
+
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  members           OrganizationMember[]
+  students          Student[]
+  subscription      Subscription?
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  userId         String       @map("user_id")
+  organizationId String       @map("organization_id")
+  role           String       @default("member") // admin, member
+
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@map("organization_members")
+}
+
+model Subscription {
+  id                  String              @id @default(cuid())
+  userId              String?             @unique @map("user_id")
+  organizationId      String?             @unique @map("organization_id")
+
+  plan                SubscriptionTier
+  status              SubscriptionStatus  @default(TRIALING)
+
+  // Stripe
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  stripeCustomerId     String?            @map("stripe_customer_id")
+  stripePriceId        String?            @map("stripe_price_id")
+
+  // Dates
+  currentPeriodStart   DateTime?          @map("current_period_start")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
+  canceledAt           DateTime?          @map("canceled_at")
+  trialEndsAt          DateTime?          @map("trial_ends_at")
+
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  user                 User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization         Organization?      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+// ============================================
+// DONNÉES MÉTIER
+// ============================================
+
+enum Sex {
+  F
+  M
+  AUTRE
+  ND
+}
+
+model Student {
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  organizationId String?   @map("organization_id")
+
+  nom            String
+  prenom         String
+  sexe           Sex?
+  naissance      DateTime? @db.Date
+  photoUrl       String?   @map("photo_url")
+
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  carnets        Carnet[]
+  photos         Photo[]
+  tempPhotos     TempPhoto[]
+
+  @@index([userId])
+  @@index([organizationId])
+  @@map("students")
+}
+
+model Carnet {
+  id         String   @id @default(cuid())
+  studentId  String   @map("student_id")
+  userId     String   @map("user_id")
+
+  // Données métier (JSON)
+  meta       Json     // { eleve, annee, enseignant, periode, avatar }
+  skills     Json     // { [skillId]: { status, comment, evaluatedAt, period } }
+  synthese   Json     // { forces, axes, projets }
+  progress   Json?    // Cache calculé { [domainId]: { acquired, total } }
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, userId])
+  @@index([studentId])
+  @@index([userId])
+  @@map("carnets")
+}
+
+model Photo {
+  id         String   @id @default(cuid())
+  studentId  String   @map("student_id")
+  userId     String   @map("user_id")
+  skillId    String?  @map("skill_id")
+
+  s3Key      String   @map("s3_key")
+  s3Url      String   @map("s3_url")
+  caption    String?
+  mimeType   String?  @map("mime_type")
+  size       Int?     // bytes
+
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([skillId])
+  @@index([userId])
+  @@map("photos")
+}
+
+model TempPhoto {
+  id          String   @id @default(cuid())
+  studentId   String   @map("student_id")
+  userId      String   @map("user_id")
+
+  s3Key       String   @map("s3_key")
+  s3Url       String   @map("s3_url")
+  description String?
+
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  user        User     @relation("UserTempPhotos", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("temp_photos")
+}
+
+// ============================================
+// SYSTÈME
+// ============================================
+
+enum ActivityType {
+  CREATE
+  UPDATE
+  DELETE
+  IMPORT
+  EXPORT
+  BACKUP
+  RESTORE
+}
+
+model ActivityLog {
+  id          String       @id @default(cuid())
+  userId      String       @map("user_id")
+
+  type        ActivityType
+  entity      String       // "Élève", "Carnet", "Photo", etc.
+  entityId    String?      @map("entity_id")
+  description String?
+  details     Json?        // Données additionnelles
+
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+model Backup {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+
+  s3Key     String   @map("s3_key")
+  s3Url     String   @map("s3_url")
+  size      Int?     // bytes
+  version   String   @default("1.0.0")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("backups")
+}
+
+// ============================================
+// PRÉFÉRENCES UTILISATEUR
+// ============================================
+
+enum Language {
+  FR
+  EN
+}
+
+enum DateFormat {
+  DD_MM_YYYY
+  MM_DD_YYYY
+  YYYY_MM_DD
+}
+
+enum StudentSortBy {
+  NOM
+  PRENOM
+  CREATED_AT
+  UPDATED_AT
+}
+
+model UserPreferences {
+  id                    String         @id @default(cuid())
+  userId                String         @unique @map("user_id")
+
+  // Préférences d'affichage
+  language              Language       @default(FR)
+  dateFormat            DateFormat     @default(DD_MM_YYYY) @map("date_format")
+  studentsPerPage       Int            @default(20) @map("students_per_page")
+  defaultStudentSort    StudentSortBy  @default(NOM) @map("default_student_sort")
+
+  // Préférences de notifications
+  emailNotifications    Boolean        @default(true) @map("email_notifications")
+  emailReminders        Boolean        @default(false) @map("email_reminders")
+
+  // Préférences d'interface
+  showWelcomeMessage    Boolean        @default(true) @map("show_welcome_message")
+  compactMode           Boolean        @default(false) @map("compact_mode")
+
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+
+  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+model Settings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Carnet de Suivi GS",
+  "short_name": "Carnet GS",
+  "description": "Application de carnet de suivi pour Grande Section (Cycle 1)",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

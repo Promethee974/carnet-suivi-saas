@@ -1,0 +1,29 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Frontend - Application de carnet de suivi pour Grande Section (Cycle 1)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "generate-icons": "node ../scripts/generate-icons.js",
+    "generate-splash": "node ../scripts/generate-splash.js",
+    "prepare-assets": "npm run generate-icons && npm run generate-splash"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31",
+    "sharp": "^0.33.5",
+    "tailwindcss": "^3.3.5",
+    "typescript": "^5.2.2",
+    "vite": "^5.4.20",
+    "vite-plugin-pwa": "^0.16.7"
+  },
+  "dependencies": {
+    "idb": "^7.1.1"
+  }
+}
