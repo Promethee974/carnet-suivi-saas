@@ -57,7 +57,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   const userId = req.user!.id;
-  const { name, startDate, endDate } = req.body;
+  const { name, school, classLevel, startDate, endDate } = req.body;
 
   if (!name || !startDate || !endDate) {
     return res.status(400).json({
@@ -68,6 +68,8 @@ router.post('/', async (req, res) => {
 
   const schoolYear = await SchoolYearsService.create(userId, {
     name,
+    school,
+    classLevel,
     startDate,
     endDate,
   });
@@ -85,10 +87,12 @@ router.post('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   const userId = req.user!.id;
   const { id } = req.params;
-  const { name, startDate, endDate, isActive, isArchived } = req.body;
+  const { name, school, classLevel, startDate, endDate, isActive, isArchived } = req.body;
 
   const schoolYear = await SchoolYearsService.update(id, userId, {
     name,
+    school,
+    classLevel,
     startDate,
     endDate,
     isActive,
