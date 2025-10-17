@@ -63,6 +63,7 @@ model User {
   organizations     OrganizationMember[]
   subscription      Subscription?
   preferences       UserPreferences?
+  schoolYears       SchoolYear[]
 
   @@map("users")
 }
@@ -144,52 +145,88 @@ enum Sex {
   ND
 }
 
+model SchoolYear {
+  id          String      @id @default(cuid())
+  userId      String      @map("user_id")
+
+  // Informations de l'année scolaire
+  name        String      // ex: "2024-2025"
+  school      String?     // Nom de l'établissement
+  classLevel  ClassLevel? @map("class_level") // Niveau de classe
+  startDate   DateTime    @map("start_date") @db.Date
+  endDate     DateTime    @map("end_date") @db.Date
+
+  // État
+  isActive    Boolean     @default(true) @map("is_active")
+  isArchived  Boolean     @default(false) @map("is_archived")
+
+  // Métadonnées
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students    Student[]
+  carnets     Carnet[]
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([classLevel])
+  @@map("school_years")
+}
+
 model Student {
-  id             String    @id @default(cuid())
-  userId         String    @map("user_id")
-  organizationId String?   @map("organization_id")
+  id             String       @id @default(cuid())
+  userId         String       @map("user_id")
+  organizationId String?      @map("organization_id")
+  schoolYearId   String?      @map("school_year_id")
 
   nom            String
   prenom         String
   sexe           Sex?
-  naissance      DateTime? @db.Date
-  photoUrl       String?   @map("photo_url")
+  naissance      DateTime?    @db.Date
+  photoUrl       String?      @map("photo_url")
 
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  schoolYear     SchoolYear?  @relation(fields: [schoolYearId], references: [id], onDelete: SetNull)
   carnets        Carnet[]
   photos         Photo[]
   tempPhotos     TempPhoto[]
 
   @@index([userId])
   @@index([organizationId])
+  @@index([schoolYearId])
   @@map("students")
 }
 
 model Carnet {
-  id         String   @id @default(cuid())
-  studentId  String   @map("student_id")
-  userId     String   @map("user_id")
+  id           String     @id @default(cuid())
+  studentId    String     @map("student_id")
+  userId       String     @map("user_id")
+  schoolYearId String?    @map("school_year_id")
 
   // Données métier (JSON)
-  meta       Json     // { eleve, annee, enseignant, periode, avatar }
-  skills     Json     // { [skillId]: { status, comment, evaluatedAt, period } }
-  synthese   Json     // { forces, axes, projets }
-  progress   Json?    // Cache calculé { [domainId]: { acquired, total } }
+  meta         Json       // { eleve, annee, enseignant, periode, avatar }
+  skills       Json       // { [skillId]: { status, comment, evaluatedAt, period } }
+  synthese     Json       // { forces, axes, projets }
+  progress     Json?      // Cache calculé { [domainId]: { acquired, total } }
 
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schoolYear   SchoolYear? @relation(fields: [schoolYearId], references: [id], onDelete: SetNull)
 
   @@unique([studentId, userId])
   @@index([studentId])
   @@index([userId])
+  @@index([schoolYearId])
   @@map("carnets")
 }
 

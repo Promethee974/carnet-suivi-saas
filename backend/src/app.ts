@@ -11,6 +11,7 @@ import studentsRoutes from './modules/students/students.routes.js';
 import carnetsRoutes from './modules/carnets/carnets.routes.js';
 import photosRoutes from './modules/photos/photos.routes.js';
 import preferencesRoutes from './modules/preferences/preferences.routes.js';
+import schoolYearsRoutes from './modules/school-years/school-years.routes.js';
 
 export const app = express();
 
@@ -71,6 +72,7 @@ app.use('/api/students', studentsRoutes);
 app.use('/api/carnets', carnetsRoutes);
 app.use('/api/photos', photosRoutes);
 app.use('/api/preferences', preferencesRoutes);
+app.use('/api/school-years', schoolYearsRoutes);
 
 // Route 404
 app.use('*', (req, res) => {

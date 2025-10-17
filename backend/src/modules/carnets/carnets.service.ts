@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database.js';
 import { Prisma } from '@prisma/client';
+import { SchoolYearsService } from '../school-years/school-years.service.js';
 
 export interface CarnetMetaDto {
   eleve?: {
@@ -78,10 +79,14 @@ export class CarnetsService {
 
     // Si pas de carnet, créer un carnet vide
     if (!carnet) {
+      // Récupérer l'année scolaire active pour lier le carnet
+      const activeYear = await SchoolYearsService.getActive(userId);
+
       carnet = await prisma.carnet.create({
         data: {
           studentId,
           userId,
+          schoolYearId: activeYear?.id,
           meta: {},
           skills: {},
           synthese: {}
@@ -156,10 +161,14 @@ export class CarnetsService {
 
     // Si le carnet n'existe pas, le créer
     if (!existingCarnet) {
+      // Récupérer l'année scolaire active pour lier le carnet
+      const activeYear = await SchoolYearsService.getActive(userId);
+
       const carnet = await prisma.carnet.create({
         data: {
           studentId,
           userId,
+          schoolYearId: activeYear?.id,
           meta: (data.meta || {}) as any,
           skills: (data.skills || {}) as any,
           synthese: (data.synthese || {}) as any,
@@ -289,10 +298,18 @@ export class CarnetsService {
 
   /**
    * Récupérer tous les carnets d'un utilisateur
+   * Filtrés par année scolaire active si elle existe
    */
   async getCarnetsByUser(userId: string) {
+    // Récupérer l'année scolaire active
+    const activeYear = await SchoolYearsService.getActive(userId);
+
     const carnets = await prisma.carnet.findMany({
-      where: { userId },
+      where: {
+        userId,
+        // Filtrer par année scolaire active si elle existe
+        ...(activeYear ? { schoolYearId: activeYear.id } : {})
+      },
       include: {
         student: {
           select: {

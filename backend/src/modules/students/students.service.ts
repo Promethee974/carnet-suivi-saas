@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database.js';
 import { Prisma } from '@prisma/client';
+import { SchoolYearsService } from '../school-years/school-years.service.js';
 
 export interface CreateStudentDto {
   nom: string;
@@ -22,10 +23,18 @@ export interface UpdateStudentDto {
 export class StudentsService {
   /**
    * Récupérer tous les élèves d'un utilisateur
+   * Filtrés par année scolaire active si elle existe
    */
   async getStudentsByUser(userId: string) {
+    // Récupérer l'année scolaire active
+    const activeYear = await SchoolYearsService.getActive(userId);
+
     const students = await prisma.student.findMany({
-      where: { userId },
+      where: {
+        userId,
+        // Filtrer par année scolaire active si elle existe
+        ...(activeYear ? { schoolYearId: activeYear.id } : {})
+      },
       orderBy: [
         { nom: 'asc' },
         { prenom: 'asc' }
@@ -89,8 +98,12 @@ export class StudentsService {
 
   /**
    * Créer un nouvel élève
+   * Lié à l'année scolaire active si elle existe
    */
   async createStudent(userId: string, data: CreateStudentDto) {
+    // Récupérer l'année scolaire active pour lier l'élève
+    const activeYear = await SchoolYearsService.getActive(userId);
+
     const studentData: Prisma.StudentCreateInput = {
       nom: data.nom.trim(),
       prenom: data.prenom.trim(),
@@ -100,6 +113,13 @@ export class StudentsService {
         connect: { id: userId }
       }
     };
+
+    // Lier à l'année scolaire active si elle existe
+    if (activeYear) {
+      studentData.schoolYear = {
+        connect: { id: activeYear.id }
+      };
+    }
 
     // Ajouter la date de naissance si fournie
     if (data.naissance) {
@@ -288,11 +308,19 @@ export class StudentsService {
 
   /**
    * Obtenir les statistiques globales pour le dashboard
+   * Filtrées par année scolaire active si elle existe
    */
   async getDashboardStats(userId: string) {
+    // Récupérer l'année scolaire active
+    const activeYear = await SchoolYearsService.getActive(userId);
+
     // Récupérer tous les élèves avec leurs carnets
     const students = await prisma.student.findMany({
-      where: { userId },
+      where: {
+        userId,
+        // Filtrer par année scolaire active si elle existe
+        ...(activeYear ? { schoolYearId: activeYear.id } : {})
+      },
       include: {
         carnets: {
           select: {
