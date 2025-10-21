@@ -80,6 +80,14 @@ export class StudentsService {
         tempPhotos: {
           orderBy: { createdAt: 'desc' }
         },
+        schoolYear: {
+          select: {
+            id: true,
+            name: true,
+            classLevel: true,
+            school: true
+          }
+        },
         _count: {
           select: {
             photos: true,
@@ -357,18 +365,23 @@ export class StudentsService {
       const carnet = student.carnets[0];
       if (carnet && carnet.skills) {
         const skills = carnet.skills as Record<string, any>;
-        Object.values(skills).forEach((domain: any) => {
-          if (domain && typeof domain === 'object') {
-            Object.values(domain).forEach((skill: any) => {
-              if (skill && typeof skill === 'object' && 'status' in skill) {
-                totalSkills++;
-                const status = skill.status;
-                if (status === 'A') acquiredSkills++;
-                else if (status === 'EC') inProgressSkills++;
-                else if (status === 'NA') notAcquiredSkills++;
-                else notEvaluatedSkills++;
-              }
-            });
+        const processSkill = (skill: any) => {
+          if (skill && typeof skill === 'object' && 'status' in skill) {
+            totalSkills++;
+            const status = skill.status;
+            if (status === 'A') acquiredSkills++;
+            else if (status === 'EC') inProgressSkills++;
+            else if (status === 'NA') notAcquiredSkills++;
+            else notEvaluatedSkills++;
+            return true;
+          }
+          return false;
+        };
+
+        Object.values(skills).forEach((entry: any) => {
+          if (!entry) return;
+          if (!processSkill(entry) && typeof entry === 'object') {
+            Object.values(entry).forEach(processSkill);
           }
         });
       }

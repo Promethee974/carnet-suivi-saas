@@ -64,6 +64,7 @@ model User {
   subscription      Subscription?
   preferences       UserPreferences?
   schoolYears       SchoolYear[]
+  subjects          Subject[]
 
   @@map("users")
 }
@@ -168,6 +169,7 @@ model SchoolYear {
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   students    Student[]
   carnets     Carnet[]
+  subjects    Subject[]
 
   @@index([userId])
   @@index([isActive])
@@ -383,3 +385,92 @@ model Settings {
 
   @@map("settings")
 }
+
+// ============================================
+// GESTION DU PROGRAMME (MATIÈRES, DOMAINES, COMPÉTENCES)
+// ============================================
+
+// Matière (niveau 1) - Ex: "Français", "Mathématiques"
+model Subject {
+  id            String      @id @default(cuid())
+  userId        String      @map("user_id")
+  schoolYearId  String      @map("school_year_id")
+
+  name          String
+  color         String      @default("bg-gray-500")
+  order         Int         @default(0)
+  isTransversal Boolean     @default(false) @map("is_transversal")
+
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schoolYear    SchoolYear  @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+  domains       Domain[]
+
+  @@index([userId])
+  @@index([schoolYearId])
+  @@index([order])
+  @@map("subjects")
+}
+
+// Domaine (niveau 2) - Ex: "Langage oral", "Numération"
+model Domain {
+  id          String      @id @default(cuid())
+  subjectId   String      @map("subject_id")
+
+  name        String
+  order       Int         @default(0)
+
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  subject     Subject     @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  subDomains  SubDomain[]
+  skills      Skill[]     // Compétences directes (sans sous-domaine)
+
+  @@index([subjectId])
+  @@index([order])
+  @@map("domains")
+}
+
+// Sous-domaine (niveau 3 - optionnel) - Ex: "Syllabes", "Rimes"
+model SubDomain {
+  id          String   @id @default(cuid())
+  domainId    String   @map("domain_id")
+
+  name        String
+  order       Int      @default(0)
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  domain      Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  skills      Skill[]
+
+  @@index([domainId])
+  @@index([order])
+  @@map("subdomains")
+}
+
+// Compétence (niveau final)
+model Skill {
+  id          String     @id @default(cuid())
+  domainId    String?    @map("domain_id")      // Null si rattaché à un sous-domaine
+  subDomainId String?    @map("subdomain_id")   // Null si rattaché directement au domaine
+
+  text        String
+  order       Int        @default(0)
+
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  domain      Domain?    @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  subDomain   SubDomain? @relation(fields: [subDomainId], references: [id], onDelete: Cascade)
+
+  @@index([domainId])
+  @@index([subDomainId])
+  @@index([order])
+  @@map("skills")
+}
+
