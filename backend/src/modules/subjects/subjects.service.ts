@@ -12,14 +12,23 @@ export class SubjectsService {
           include: {
             subDomains: {
               include: {
+                objectives: {
+                  include: {
+                    skills: {
+                      orderBy: { order: 'asc' },
+                    },
+                  },
+                  orderBy: { order: 'asc' },
+                },
                 skills: {
+                  where: { objectiveId: null },
                   orderBy: { order: 'asc' },
                 },
               },
               orderBy: { order: 'asc' },
             },
             skills: {
-              where: { subDomainId: null },
+              where: { subDomainId: null, objectiveId: null },
               orderBy: { order: 'asc' },
             },
           },
@@ -43,14 +52,23 @@ export class SubjectsService {
           include: {
             subDomains: {
               include: {
+                objectives: {
+                  include: {
+                    skills: {
+                      orderBy: { order: 'asc' },
+                    },
+                  },
+                  orderBy: { order: 'asc' },
+                },
                 skills: {
+                  where: { objectiveId: null },
                   orderBy: { order: 'asc' },
                 },
               },
               orderBy: { order: 'asc' },
             },
             skills: {
-              where: { subDomainId: null },
+              where: { subDomainId: null, objectiveId: null },
               orderBy: { order: 'asc' },
             },
           },
@@ -312,20 +330,118 @@ export class SubjectsService {
   }
 
   /**
-   * Créer une nouvelle compétence (dans un domaine ou sous-domaine)
+   * Créer un nouvel objectif dans un sous-domaine
+   */
+  static async createObjective(subDomainId: string, userId: string, data: {
+    name: string;
+  }) {
+    // Vérifier que le sous-domaine appartient à l'utilisateur
+    const subDomain = await prisma.subDomain.findFirst({
+      where: {
+        id: subDomainId,
+        domain: {
+          subject: { userId },
+        },
+      },
+    });
+
+    if (!subDomain) {
+      throw new Error('Sous-domaine introuvable');
+    }
+
+    // Récupérer l'ordre max actuel
+    const maxOrder = await prisma.objective.aggregate({
+      where: { subDomainId },
+      _max: { order: true },
+    });
+
+    const objective = await prisma.objective.create({
+      data: {
+        subDomainId,
+        name: data.name,
+        order: (maxOrder._max.order || 0) + 1,
+      },
+    });
+
+    return objective;
+  }
+
+  /**
+   * Mettre à jour un objectif
+   */
+  static async updateObjective(id: string, userId: string, data: {
+    name?: string;
+    order?: number;
+  }) {
+    // Vérifier que l'objectif appartient à l'utilisateur
+    const objective = await prisma.objective.findFirst({
+      where: {
+        id,
+        subDomain: {
+          domain: {
+            subject: { userId },
+          },
+        },
+      },
+    });
+
+    if (!objective) {
+      throw new Error('Objectif introuvable');
+    }
+
+    const updated = await prisma.objective.update({
+      where: { id },
+      data,
+    });
+
+    return updated;
+  }
+
+  /**
+   * Supprimer un objectif
+   */
+  static async deleteObjective(id: string, userId: string) {
+    // Vérifier que l'objectif appartient à l'utilisateur
+    const objective = await prisma.objective.findFirst({
+      where: {
+        id,
+        subDomain: {
+          domain: {
+            subject: { userId },
+          },
+        },
+      },
+    });
+
+    if (!objective) {
+      throw new Error('Objectif introuvable');
+    }
+
+    await prisma.objective.delete({
+      where: { id },
+    });
+
+    return { success: true };
+  }
+
+  /**
+   * Créer une nouvelle compétence (dans un domaine, sous-domaine ou objectif)
    */
   static async createSkill(userId: string, data: {
     text: string;
     domainId?: string;
     subDomainId?: string;
+    objectiveId?: string;
   }) {
-    // Vérifier que soit domainId soit subDomainId est fourni
-    if (!data.domainId && !data.subDomainId) {
-      throw new Error('domainId ou subDomainId requis');
+    // Vérifier qu'au moins un parent est fourni
+    if (!data.domainId && !data.subDomainId && !data.objectiveId) {
+      throw new Error('domainId, subDomainId ou objectiveId requis');
     }
 
-    if (data.domainId && data.subDomainId) {
-      throw new Error('Fournir soit domainId soit subDomainId, pas les deux');
+    // Vérifier qu'un seul parent est fourni
+    const parentCount = [data.domainId, data.subDomainId, data.objectiveId].filter(Boolean).length;
+    if (parentCount > 1) {
+      throw new Error('Fournir seulement un parent: domainId, subDomainId ou objectiveId');
     }
 
     // Vérifier les permissions
@@ -355,10 +471,28 @@ export class SubjectsService {
       }
     }
 
+    if (data.objectiveId) {
+      const objective = await prisma.objective.findFirst({
+        where: {
+          id: data.objectiveId,
+          subDomain: {
+            domain: {
+              subject: { userId },
+            },
+          },
+        },
+      });
+      if (!objective) {
+        throw new Error('Objectif introuvable');
+      }
+    }
+
     // Récupérer l'ordre max actuel
-    const where = data.domainId
-      ? { domainId: data.domainId, subDomainId: null }
-      : { subDomainId: data.subDomainId };
+    const where = data.objectiveId
+      ? { objectiveId: data.objectiveId }
+      : data.subDomainId
+      ? { subDomainId: data.subDomainId, objectiveId: null }
+      : { domainId: data.domainId, subDomainId: null, objectiveId: null };
 
     const maxOrder = await prisma.skill.aggregate({
       where,
@@ -370,6 +504,7 @@ export class SubjectsService {
         text: data.text,
         domainId: data.domainId || null,
         subDomainId: data.subDomainId || null,
+        objectiveId: data.objectiveId || null,
         order: (maxOrder._max.order || 0) + 1,
       },
     });
@@ -398,6 +533,15 @@ export class SubjectsService {
             subDomain: {
               domain: {
                 subject: { userId },
+              },
+            },
+          },
+          {
+            objective: {
+              subDomain: {
+                domain: {
+                  subject: { userId },
+                },
               },
             },
           },
@@ -435,6 +579,15 @@ export class SubjectsService {
             subDomain: {
               domain: {
                 subject: { userId },
+              },
+            },
+          },
+          {
+            objective: {
+              subDomain: {
+                domain: {
+                  subject: { userId },
+                },
               },
             },
           },

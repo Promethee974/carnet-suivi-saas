@@ -4,6 +4,7 @@
 
 import { Router } from 'express';
 import { authMiddleware } from '../../middleware/auth.middleware.js';
+import { asyncHandler } from '../../middleware/error.middleware.js';
 import { SchoolYearsService } from './school-years.service.js';
 
 const router = Router();
@@ -15,33 +16,33 @@ router.use(authMiddleware);
  * GET /api/school-years
  * Récupérer toutes les années scolaires de l'utilisateur
  */
-router.get('/', async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const schoolYears = await SchoolYearsService.getAll(userId);
   res.json({
     status: 'success',
     data: schoolYears,
   });
-});
+}));
 
 /**
  * GET /api/school-years/active
  * Récupérer l'année scolaire active
  */
-router.get('/active', async (req, res) => {
+router.get('/active', asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const activeYear = await SchoolYearsService.getActive(userId);
   res.json({
     status: 'success',
     data: activeYear,
   });
-});
+}));
 
 /**
  * GET /api/school-years/:id
  * Récupérer une année scolaire par ID
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const { id } = req.params;
   const schoolYear = await SchoolYearsService.getById(id, userId);
@@ -49,13 +50,13 @@ router.get('/:id', async (req, res) => {
     status: 'success',
     data: schoolYear,
   });
-});
+}));
 
 /**
  * POST /api/school-years
  * Créer une nouvelle année scolaire
  */
-router.post('/', async (req, res) => {
+router.post('/', asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const { name, school, classLevel, startDate, endDate } = req.body;
 
@@ -78,13 +79,13 @@ router.post('/', async (req, res) => {
     status: 'success',
     data: schoolYear,
   });
-});
+}));
 
 /**
  * PATCH /api/school-years/:id
  * Mettre à jour une année scolaire
  */
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const { id } = req.params;
   const { name, school, classLevel, startDate, endDate, isActive, isArchived } = req.body;
@@ -103,13 +104,13 @@ router.patch('/:id', async (req, res) => {
     status: 'success',
     data: schoolYear,
   });
-});
+}));
 
 /**
  * POST /api/school-years/:id/archive
  * Archiver une année scolaire
  */
-router.post('/:id/archive', async (req, res) => {
+router.post('/:id/archive', asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const { id } = req.params;
 
@@ -118,13 +119,13 @@ router.post('/:id/archive', async (req, res) => {
     status: 'success',
     data: schoolYear,
   });
-});
+}));
 
 /**
  * DELETE /api/school-years/:id
  * Supprimer une année scolaire
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const { id } = req.params;
 
@@ -133,6 +134,6 @@ router.delete('/:id', async (req, res) => {
     status: 'success',
     data: result,
   });
-});
+}));
 
 export default router;

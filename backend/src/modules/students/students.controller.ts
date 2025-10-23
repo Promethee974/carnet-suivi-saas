@@ -161,6 +161,46 @@ export class StudentsController {
       data: stats
     });
   }
+
+  /**
+   * PUT /api/students/:id/profile-picture
+   * Définir une photo comme photo de profil
+   */
+  async setProfilePicture(req: Request, res: Response) {
+    const userId = req.user!.id;
+    const { id: studentId } = req.params;
+    const { photoId } = req.body;
+
+    if (!photoId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'photoId est requis'
+      });
+    }
+
+    const student = await studentsService.setProfilePicture(studentId, photoId, userId);
+
+    res.json({
+      status: 'success',
+      data: student
+    });
+  }
+
+  /**
+   * DELETE /api/students/:id/profile-picture
+   * Retirer la photo de profil
+   */
+  async removeProfilePicture(req: Request, res: Response) {
+    const userId = req.user!.id;
+    const { id: studentId } = req.params;
+
+    const student = await studentsService.removeProfilePicture(studentId, userId);
+
+    res.json({
+      status: 'success',
+      data: student
+    });
+  }
 }
 
 export const studentsController = new StudentsController();

@@ -1,9 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import { errorMiddleware } from './middleware/error.middleware.js';
 import { env, isDevelopment } from './config/env.js';
+import { globalLimiter } from './middleware/rateLimiting.middleware.js';
+import { mongoSanitization, xssSanitization } from './middleware/sanitization.middleware.js';
 
 // Import des routes
 import authRoutes from './modules/auth/auth.routes.js';
@@ -16,8 +17,34 @@ import subjectsRoutes from './modules/subjects/subjects.routes.js';
 
 export const app = express();
 
-// Sécurité
-app.use(helmet());
+// Sécurité - Configuration Helmet avec CSP et HSTS
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"], // Pour les styles inline si nécessaire
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:', 'blob:'], // Pour les images uploadées
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
+    hsts: {
+      maxAge: 31536000, // 1 an
+      includeSubDomains: true,
+      preload: true,
+    },
+    noSniff: true, // X-Content-Type-Options: nosniff
+    referrerPolicy: {
+      policy: 'strict-origin-when-cross-origin',
+    },
+    xssFilter: true, // X-XSS-Protection: 1; mode=block (legacy mais utile)
+  })
+);
 
 // CORS
 const allowedOrigins = [
@@ -54,18 +81,16 @@ app.use(cors({
 // Gérer les requêtes OPTIONS (prévol)
 app.options('*', cors());
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 1000 : 100, // Limite de requêtes
-  message: 'Too many requests from this IP, please try again later.',
-});
-
-app.use('/api/', limiter);
-
-// Parsing
+// Parsing (avant sanitization)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Sanitization des inputs (MongoDB injection et XSS)
+app.use(mongoSanitization);
+app.use(xssSanitization);
+
+// Rate limiting global
+app.use('/api/', globalLimiter);
 
 // Logging en développement
 if (isDevelopment) {

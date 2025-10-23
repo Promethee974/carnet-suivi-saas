@@ -178,31 +178,34 @@ model SchoolYear {
 }
 
 model Student {
-  id             String       @id @default(cuid())
-  userId         String       @map("user_id")
-  organizationId String?      @map("organization_id")
-  schoolYearId   String?      @map("school_year_id")
+  id               String       @id @default(cuid())
+  userId           String       @map("user_id")
+  organizationId   String?      @map("organization_id")
+  schoolYearId     String?      @map("school_year_id")
 
-  nom            String
-  prenom         String
-  sexe           Sex?
-  naissance      DateTime?    @db.Date
-  photoUrl       String?      @map("photo_url")
+  nom              String
+  prenom           String
+  sexe             Sex?
+  naissance        DateTime?    @db.Date
+  photoUrl         String?      @map("photo_url")
+  profilePictureId String?      @map("profile_picture_id")
 
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  schoolYear     SchoolYear?  @relation(fields: [schoolYearId], references: [id], onDelete: SetNull)
-  carnets        Carnet[]
-  photos         Photo[]
-  tempPhotos     TempPhoto[]
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  schoolYear       SchoolYear?  @relation(fields: [schoolYearId], references: [id], onDelete: SetNull)
+  profilePicture   Photo?       @relation("ProfilePicture", fields: [profilePictureId], references: [id], onDelete: SetNull)
+  carnets          Carnet[]
+  photos           Photo[]
+  tempPhotos       TempPhoto[]
 
   @@index([userId])
   @@index([organizationId])
   @@index([schoolYearId])
+  @@index([profilePictureId])
   @@map("students")
 }
 
@@ -233,21 +236,22 @@ model Carnet {
 }
 
 model Photo {
-  id         String   @id @default(cuid())
-  studentId  String   @map("student_id")
-  userId     String   @map("user_id")
-  skillId    String?  @map("skill_id")
+  id                String    @id @default(cuid())
+  studentId         String    @map("student_id")
+  userId            String    @map("user_id")
+  skillId           String?   @map("skill_id")
 
-  s3Key      String   @map("s3_key")
-  s3Url      String   @map("s3_url")
-  caption    String?
-  mimeType   String?  @map("mime_type")
-  size       Int?     // bytes
+  s3Key             String    @map("s3_key")
+  s3Url             String    @map("s3_url")
+  caption           String?
+  mimeType          String?   @map("mime_type")
+  size              Int?      // bytes
 
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
 
-  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student           Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profilePictureFor Student[] @relation("ProfilePicture")
 
   @@index([studentId])
   @@index([skillId])
@@ -436,28 +440,49 @@ model Domain {
 
 // Sous-domaine (niveau 3 - optionnel) - Ex: "Syllabes", "Rimes"
 model SubDomain {
-  id          String   @id @default(cuid())
-  domainId    String   @map("domain_id")
+  id          String      @id @default(cuid())
+  domainId    String      @map("domain_id")
 
   name        String
-  order       Int      @default(0)
+  order       Int         @default(0)
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
 
-  domain      Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
-  skills      Skill[]
+  domain      Domain      @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  objectives  Objective[]
+  skills      Skill[]     // Compétences directes (sans objectif)
 
   @@index([domainId])
   @@index([order])
   @@map("subdomains")
 }
 
+// Objectif (niveau 4 - optionnel) - Ex: "Identifier les sons", "Reconnaître les lettres"
+model Objective {
+  id          String    @id @default(cuid())
+  subDomainId String    @map("subdomain_id")
+
+  name        String
+  order       Int       @default(0)
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  subDomain   SubDomain @relation(fields: [subDomainId], references: [id], onDelete: Cascade)
+  skills      Skill[]
+
+  @@index([subDomainId])
+  @@index([order])
+  @@map("objectives")
+}
+
 // Compétence (niveau final)
 model Skill {
   id          String     @id @default(cuid())
-  domainId    String?    @map("domain_id")      // Null si rattaché à un sous-domaine
-  subDomainId String?    @map("subdomain_id")   // Null si rattaché directement au domaine
+  domainId    String?    @map("domain_id")      // Null si rattaché à un sous-domaine ou objectif
+  subDomainId String?    @map("subdomain_id")   // Null si rattaché directement au domaine ou à un objectif
+  objectiveId String?    @map("objective_id")   // Null si rattaché directement au domaine ou sous-domaine
 
   text        String
   order       Int        @default(0)
@@ -467,9 +492,11 @@ model Skill {
 
   domain      Domain?    @relation(fields: [domainId], references: [id], onDelete: Cascade)
   subDomain   SubDomain? @relation(fields: [subDomainId], references: [id], onDelete: Cascade)
+  objective   Objective? @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
 
   @@index([domainId])
   @@index([subDomainId])
+  @@index([objectiveId])
   @@index([order])
   @@map("skills")
 }

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { SubjectsService } from './subjects.service.js';
 import { seedDefaultProgram } from './subjects.seed.js';
 import { authenticate } from '../../middleware/auth.middleware.js';
+import { asyncHandler } from '../../middleware/error.middleware.js';
 
 const router = Router();
 
@@ -17,32 +18,24 @@ router.use(authenticate);
  * Initialiser le programme avec les données par défaut
  * Body: { schoolYearId: string }
  */
-router.post('/seed', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { schoolYearId } = req.body;
+router.post('/seed', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { schoolYearId } = req.body;
 
-    if (!schoolYearId) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'L\'ID de la classe est requis',
-      });
-    }
-
-    await seedDefaultProgram(userId, schoolYearId);
-
-    res.json({
-      status: 'success',
-      message: 'Programme initialisé avec succès',
-    });
-  } catch (error: any) {
-    console.error('Erreur seed programme:', error);
-    res.status(500).json({
+  if (!schoolYearId) {
+    return res.status(400).json({
       status: 'error',
-      message: error.message || 'Erreur lors de l\'initialisation du programme',
+      message: 'L\'ID de la classe est requis',
     });
   }
-});
+
+  await seedDefaultProgram(userId, schoolYearId);
+
+  res.json({
+    status: 'success',
+    message: 'Programme initialisé avec succès',
+  });
+}));
 
 // ============================================
 // MATIÈRES (SUBJECTS)
@@ -53,198 +46,172 @@ router.post('/seed', async (req, res) => {
  * Récupérer toutes les matières avec arborescence complète pour une année scolaire
  * Si format=carnet, retourne le format spécifique pour le carnet de suivi
  */
-router.get('/', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { schoolYearId, format } = req.query;
+router.get('/', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { schoolYearId, format } = req.query;
 
-    if (!schoolYearId || typeof schoolYearId !== 'string') {
-      return res.status(400).json({
-        status: 'error',
-        message: 'L\'ID de la classe est requis',
-      });
-    }
+  if (!schoolYearId || typeof schoolYearId !== 'string') {
+    return res.status(400).json({
+      status: 'error',
+      message: 'L\'ID de la classe est requis',
+    });
+  }
 
-    const subjects = await SubjectsService.getAll(userId, schoolYearId);
+  const subjects = await SubjectsService.getAll(userId, schoolYearId);
 
-    // Si format=carnet, formater le programme pour le carnet de suivi
-    if (format === 'carnet') {
-      const domains = subjects.map(subject => {
-        // Collecter toutes les compétences (skills) du sujet
-        const allSkills: any[] = [];
-
-        subject.domains.forEach(domain => {
-          // Compétences directes du domaine
-          domain.skills.forEach(skill => {
-            allSkills.push({
+  // Si format=carnet, formater le programme pour le carnet de suivi avec structure hiérarchique
+  if (format === 'carnet') {
+    const formattedSubjects = subjects.map(subject => {
+      const formattedDomains = subject.domains.map(domain => {
+        const formattedSubDomains = domain.subDomains.map(subDomain => {
+          const formattedObjectives = (subDomain.objectives || []).map(objective => ({
+            id: objective.id,
+            name: objective.name,
+            order: objective.order,
+            skills: objective.skills.map(skill => ({
               id: skill.id,
               text: skill.text,
-              domainId: subject.id,
-              subDomainId: domain.id,
-            });
-          });
+              order: skill.order,
+            })),
+          }));
 
-          // Compétences des sous-domaines
-          domain.subDomains.forEach(subDomain => {
-            subDomain.skills.forEach(skill => {
-              allSkills.push({
-                id: skill.id,
-                text: skill.text,
-                domainId: subject.id,
-                subDomainId: subDomain.id,
-              });
-            });
-          });
+          return {
+            id: subDomain.id,
+            name: subDomain.name,
+            order: subDomain.order,
+            objectives: formattedObjectives,
+            skills: subDomain.skills.map(skill => ({
+              id: skill.id,
+              text: skill.text,
+              order: skill.order,
+            })),
+          };
         });
 
         return {
-          id: subject.id,
-          name: subject.name,
-          color: subject.color,
-          skills: allSkills,
+          id: domain.id,
+          name: domain.name,
+          order: domain.order,
+          subDomains: formattedSubDomains,
+          skills: domain.skills.map(skill => ({
+            id: skill.id,
+            text: skill.text,
+            order: skill.order,
+          })),
         };
       });
 
-      return res.json({
-        status: 'success',
-        data: domains,
-      });
-    }
-
-    // Format normal
-    res.json({
-      status: 'success',
-      data: subjects,
+      return {
+        id: subject.id,
+        name: subject.name,
+        color: subject.color,
+        order: subject.order,
+        isTransversal: subject.isTransversal,
+        domains: formattedDomains,
+      };
     });
-  } catch (error: any) {
-    console.error('Erreur récupération matières:', error);
-    res.status(500).json({
-      status: 'error',
-      message: error.message || 'Erreur lors de la récupération des matières',
+
+    return res.json({
+      status: 'success',
+      data: formattedSubjects,
     });
   }
-});
+
+  // Format normal
+  res.json({
+    status: 'success',
+    data: subjects,
+  });
+}));
 
 /**
  * GET /api/subjects/:id
  * Récupérer une matière par son ID
  */
-router.get('/:id', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { id } = req.params;
+router.get('/:id', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { id } = req.params;
 
-    const subject = await SubjectsService.getById(id, userId);
+  const subject = await SubjectsService.getById(id, userId);
 
-    res.json({
-      status: 'success',
-      data: subject,
-    });
-  } catch (error: any) {
-    console.error('Erreur récupération matière:', error);
-    res.status(error.message === 'Matière introuvable' ? 404 : 500).json({
-      status: 'error',
-      message: error.message || 'Erreur lors de la récupération de la matière',
-    });
-  }
-});
+  res.json({
+    status: 'success',
+    data: subject,
+  });
+}));
 
 /**
  * POST /api/subjects
  * Créer une nouvelle matière
  * Body: { name, schoolYearId, color?, isTransversal? }
  */
-router.post('/', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { name, schoolYearId, color, isTransversal } = req.body;
+router.post('/', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { name, schoolYearId, color, isTransversal } = req.body;
 
-    if (!name) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Le nom de la matière est requis',
-      });
-    }
-
-    if (!schoolYearId) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'L\'ID de la classe est requis',
-      });
-    }
-
-    const subject = await SubjectsService.createSubject(userId, schoolYearId, {
-      name,
-      color,
-      isTransversal,
-    });
-
-    res.status(201).json({
-      status: 'success',
-      data: subject,
-    });
-  } catch (error: any) {
-    console.error('Erreur création matière:', error);
-    res.status(500).json({
+  if (!name) {
+    return res.status(400).json({
       status: 'error',
-      message: error.message || 'Erreur lors de la création de la matière',
+      message: 'Le nom de la matière est requis',
     });
   }
-});
+
+  if (!schoolYearId) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'L\'ID de la classe est requis',
+    });
+  }
+
+  const subject = await SubjectsService.createSubject(userId, schoolYearId, {
+    name,
+    color,
+    isTransversal,
+  });
+
+  res.status(201).json({
+    status: 'success',
+    data: subject,
+  });
+}));
 
 /**
  * PATCH /api/subjects/:id
  * Mettre à jour une matière
  */
-router.patch('/:id', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { id } = req.params;
-    const { name, color, isTransversal, order } = req.body;
+router.patch('/:id', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { id } = req.params;
+  const { name, color, isTransversal, order } = req.body;
 
-    const subject = await SubjectsService.updateSubject(id, userId, {
-      name,
-      color,
-      isTransversal,
-      order,
-    });
+  const subject = await SubjectsService.updateSubject(id, userId, {
+    name,
+    color,
+    isTransversal,
+    order,
+  });
 
-    res.json({
-      status: 'success',
-      data: subject,
-    });
-  } catch (error: any) {
-    console.error('Erreur mise à jour matière:', error);
-    res.status(error.message === 'Matière introuvable' ? 404 : 500).json({
-      status: 'error',
-      message: error.message || 'Erreur lors de la mise à jour de la matière',
-    });
-  }
-});
+  res.json({
+    status: 'success',
+    data: subject,
+  });
+}));
 
 /**
  * DELETE /api/subjects/:id
  * Supprimer une matière
  */
-router.delete('/:id', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { id } = req.params;
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { id } = req.params;
 
-    await SubjectsService.deleteSubject(id, userId);
+  await SubjectsService.deleteSubject(id, userId);
 
-    res.json({
-      status: 'success',
-      message: 'Matière supprimée avec succès',
-    });
-  } catch (error: any) {
-    console.error('Erreur suppression matière:', error);
-    res.status(error.message === 'Matière introuvable' ? 404 : 500).json({
-      status: 'error',
-      message: error.message || 'Erreur lors de la suppression de la matière',
-    });
-  }
-});
+  res.json({
+    status: 'success',
+    message: 'Matière supprimée avec succès',
+  });
+}));
 
 // ============================================
 // DOMAINES
@@ -254,82 +221,58 @@ router.delete('/:id', async (req, res) => {
  * POST /api/subjects/:subjectId/domains
  * Créer un nouveau domaine dans une matière
  */
-router.post('/:subjectId/domains', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { subjectId } = req.params;
-    const { name } = req.body;
+router.post('/:subjectId/domains', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { subjectId } = req.params;
+  const { name } = req.body;
 
-    if (!name) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Le nom du domaine est requis',
-      });
-    }
-
-    const domain = await SubjectsService.createDomain(subjectId, userId, { name });
-
-    res.status(201).json({
-      status: 'success',
-      data: domain,
-    });
-  } catch (error: any) {
-    console.error('Erreur création domaine:', error);
-    res.status(error.message === 'Matière introuvable' ? 404 : 500).json({
+  if (!name) {
+    return res.status(400).json({
       status: 'error',
-      message: error.message || 'Erreur lors de la création du domaine',
+      message: 'Le nom du domaine est requis',
     });
   }
-});
+
+  const domain = await SubjectsService.createDomain(subjectId, userId, { name });
+
+  res.status(201).json({
+    status: 'success',
+    data: domain,
+  });
+}));
 
 /**
  * PATCH /api/domains/:id
  * Mettre à jour un domaine
  */
-router.patch('/domains/:id', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { id } = req.params;
-    const { name, order } = req.body;
+router.patch('/domains/:id', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { id } = req.params;
+  const { name, order } = req.body;
 
-    const domain = await SubjectsService.updateDomain(id, userId, { name, order });
+  const domain = await SubjectsService.updateDomain(id, userId, { name, order });
 
-    res.json({
-      status: 'success',
-      data: domain,
-    });
-  } catch (error: any) {
-    console.error('Erreur mise à jour domaine:', error);
-    res.status(error.message === 'Domaine introuvable' ? 404 : 500).json({
-      status: 'error',
-      message: error.message || 'Erreur lors de la mise à jour du domaine',
-    });
-  }
-});
+  res.json({
+    status: 'success',
+    data: domain,
+  });
+}));
 
 /**
  * DELETE /api/domains/:id
  * Supprimer un domaine
  */
-router.delete('/domains/:id', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { id } = req.params;
+router.delete('/domains/:id', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { id } = req.params;
 
-    await SubjectsService.deleteDomain(id, userId);
+  await SubjectsService.deleteDomain(id, userId);
 
-    res.json({
-      status: 'success',
-      message: 'Domaine supprimé avec succès',
-    });
-  } catch (error: any) {
-    console.error('Erreur suppression domaine:', error);
-    res.status(error.message === 'Domaine introuvable' ? 404 : 500).json({
-      status: 'error',
-      message: error.message || 'Erreur lors de la suppression du domaine',
-    });
-  }
-});
+  res.json({
+    status: 'success',
+    message: 'Domaine supprimé avec succès',
+  });
+}));
 
 // ============================================
 // SOUS-DOMAINES
@@ -339,82 +282,119 @@ router.delete('/domains/:id', async (req, res) => {
  * POST /api/domains/:domainId/subdomains
  * Créer un nouveau sous-domaine dans un domaine
  */
-router.post('/domains/:domainId/subdomains', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { domainId } = req.params;
-    const { name } = req.body;
+router.post('/domains/:domainId/subdomains', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { domainId } = req.params;
+  const { name } = req.body;
 
-    if (!name) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Le nom du sous-domaine est requis',
-      });
-    }
-
-    const subDomain = await SubjectsService.createSubDomain(domainId, userId, { name });
-
-    res.status(201).json({
-      status: 'success',
-      data: subDomain,
-    });
-  } catch (error: any) {
-    console.error('Erreur création sous-domaine:', error);
-    res.status(error.message === 'Domaine introuvable' ? 404 : 500).json({
+  if (!name) {
+    return res.status(400).json({
       status: 'error',
-      message: error.message || 'Erreur lors de la création du sous-domaine',
+      message: 'Le nom du sous-domaine est requis',
     });
   }
-});
+
+  const subDomain = await SubjectsService.createSubDomain(domainId, userId, { name });
+
+  res.status(201).json({
+    status: 'success',
+    data: subDomain,
+  });
+}));
 
 /**
  * PATCH /api/subdomains/:id
  * Mettre à jour un sous-domaine
  */
-router.patch('/subdomains/:id', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { id } = req.params;
-    const { name, order } = req.body;
+router.patch('/subdomains/:id', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { id } = req.params;
+  const { name, order } = req.body;
 
-    const subDomain = await SubjectsService.updateSubDomain(id, userId, { name, order });
+  const subDomain = await SubjectsService.updateSubDomain(id, userId, { name, order });
 
-    res.json({
-      status: 'success',
-      data: subDomain,
-    });
-  } catch (error: any) {
-    console.error('Erreur mise à jour sous-domaine:', error);
-    res.status(error.message === 'Sous-domaine introuvable' ? 404 : 500).json({
-      status: 'error',
-      message: error.message || 'Erreur lors de la mise à jour du sous-domaine',
-    });
-  }
-});
+  res.json({
+    status: 'success',
+    data: subDomain,
+  });
+}));
 
 /**
  * DELETE /api/subdomains/:id
  * Supprimer un sous-domaine
  */
-router.delete('/subdomains/:id', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { id } = req.params;
+router.delete('/subdomains/:id', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { id } = req.params;
 
-    await SubjectsService.deleteSubDomain(id, userId);
+  await SubjectsService.deleteSubDomain(id, userId);
 
-    res.json({
-      status: 'success',
-      message: 'Sous-domaine supprimé avec succès',
-    });
-  } catch (error: any) {
-    console.error('Erreur suppression sous-domaine:', error);
-    res.status(error.message === 'Sous-domaine introuvable' ? 404 : 500).json({
+  res.json({
+    status: 'success',
+    message: 'Sous-domaine supprimé avec succès',
+  });
+}));
+
+// ============================================
+// OBJECTIFS
+// ============================================
+
+/**
+ * POST /api/subdomains/:subDomainId/objectives
+ * Créer un nouvel objectif dans un sous-domaine
+ */
+router.post('/subdomains/:subDomainId/objectives', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { subDomainId } = req.params;
+  const { name } = req.body;
+
+  if (!name) {
+    return res.status(400).json({
       status: 'error',
-      message: error.message || 'Erreur lors de la suppression du sous-domaine',
+      message: 'Le nom de l\'objectif est requis',
     });
   }
-});
+
+  const objective = await SubjectsService.createObjective(subDomainId, userId, { name });
+
+  res.status(201).json({
+    status: 'success',
+    data: objective,
+  });
+}));
+
+/**
+ * PATCH /api/objectives/:id
+ * Mettre à jour un objectif
+ */
+router.patch('/objectives/:id', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { id } = req.params;
+  const { name, order } = req.body;
+
+  const objective = await SubjectsService.updateObjective(id, userId, { name, order });
+
+  res.json({
+    status: 'success',
+    data: objective,
+  });
+}));
+
+/**
+ * DELETE /api/objectives/:id
+ * Supprimer un objectif
+ */
+router.delete('/objectives/:id', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { id } = req.params;
+
+  await SubjectsService.deleteObjective(id, userId);
+
+  res.json({
+    status: 'success',
+    message: 'Objectif supprimé avec succès',
+  });
+}));
 
 // ============================================
 // COMPÉTENCES
@@ -423,86 +403,63 @@ router.delete('/subdomains/:id', async (req, res) => {
 /**
  * POST /api/skills
  * Créer une nouvelle compétence
- * Body: { text, domainId?, subDomainId? }
+ * Body: { text, domainId?, subDomainId?, objectiveId? }
  */
-router.post('/skills', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { text, domainId, subDomainId } = req.body;
+router.post('/skills', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { text, domainId, subDomainId, objectiveId } = req.body;
 
-    if (!text) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Le texte de la compétence est requis',
-      });
-    }
-
-    const skill = await SubjectsService.createSkill(userId, {
-      text,
-      domainId,
-      subDomainId,
-    });
-
-    res.status(201).json({
-      status: 'success',
-      data: skill,
-    });
-  } catch (error: any) {
-    console.error('Erreur création compétence:', error);
-    res.status(400).json({
+  if (!text) {
+    return res.status(400).json({
       status: 'error',
-      message: error.message || 'Erreur lors de la création de la compétence',
+      message: 'Le texte de la compétence est requis',
     });
   }
-});
+
+  const skill = await SubjectsService.createSkill(userId, {
+    text,
+    domainId,
+    subDomainId,
+    objectiveId,
+  });
+
+  res.status(201).json({
+    status: 'success',
+    data: skill,
+  });
+}));
 
 /**
  * PATCH /api/skills/:id
  * Mettre à jour une compétence
  */
-router.patch('/skills/:id', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { id } = req.params;
-    const { text, order } = req.body;
+router.patch('/skills/:id', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { id } = req.params;
+  const { text, order } = req.body;
 
-    const skill = await SubjectsService.updateSkill(id, userId, { text, order });
+  const skill = await SubjectsService.updateSkill(id, userId, { text, order });
 
-    res.json({
-      status: 'success',
-      data: skill,
-    });
-  } catch (error: any) {
-    console.error('Erreur mise à jour compétence:', error);
-    res.status(error.message === 'Compétence introuvable' ? 404 : 500).json({
-      status: 'error',
-      message: error.message || 'Erreur lors de la mise à jour de la compétence',
-    });
-  }
-});
+  res.json({
+    status: 'success',
+    data: skill,
+  });
+}));
 
 /**
  * DELETE /api/skills/:id
  * Supprimer une compétence
  */
-router.delete('/skills/:id', async (req, res) => {
-  try {
-    const userId = req.user!.id;
-    const { id } = req.params;
+router.delete('/skills/:id', asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const { id } = req.params;
 
-    await SubjectsService.deleteSkill(id, userId);
+  await SubjectsService.deleteSkill(id, userId);
 
-    res.json({
-      status: 'success',
-      message: 'Compétence supprimée avec succès',
-    });
-  } catch (error: any) {
-    console.error('Erreur suppression compétence:', error);
-    res.status(error.message === 'Compétence introuvable' ? 404 : 500).json({
-      status: 'error',
-      message: error.message || 'Erreur lors de la suppression de la compétence',
-    });
-  }
-});
+  res.json({
+    status: 'success',
+    message: 'Compétence supprimée avec succès',
+  });
+}));
 
 export default router;

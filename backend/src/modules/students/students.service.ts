@@ -40,6 +40,7 @@ export class StudentsService {
         { prenom: 'asc' }
       ],
       include: {
+        profilePicture: true,
         carnets: {
           select: {
             id: true,
@@ -73,6 +74,7 @@ export class StudentsService {
         userId
       },
       include: {
+        profilePicture: true,
         carnets: true,
         photos: {
           orderBy: { createdAt: 'desc' }
@@ -413,6 +415,78 @@ export class StudentsService {
       },
       recentStudents
     };
+  }
+
+  /**
+   * Définir une photo comme photo de profil d'un élève
+   */
+  async setProfilePicture(studentId: string, photoId: string, userId: string) {
+    // Vérifier que l'élève appartient bien à l'utilisateur
+    const student = await this.getStudentById(studentId, userId);
+    if (!student) {
+      throw new Error('Élève non trouvé');
+    }
+
+    // Vérifier que la photo appartient bien à cet élève
+    const photo = await prisma.photo.findFirst({
+      where: {
+        id: photoId,
+        studentId,
+        userId
+      }
+    });
+
+    if (!photo) {
+      throw new Error('Photo non trouvée');
+    }
+
+    // Mettre à jour l'élève avec la nouvelle photo de profil
+    const updatedStudent = await prisma.student.update({
+      where: { id: studentId },
+      data: {
+        profilePictureId: photoId
+      },
+      include: {
+        profilePicture: true,
+        _count: {
+          select: {
+            photos: true,
+            tempPhotos: true
+          }
+        }
+      }
+    });
+
+    return updatedStudent;
+  }
+
+  /**
+   * Retirer la photo de profil d'un élève
+   */
+  async removeProfilePicture(studentId: string, userId: string) {
+    // Vérifier que l'élève appartient bien à l'utilisateur
+    const student = await this.getStudentById(studentId, userId);
+    if (!student) {
+      throw new Error('Élève non trouvé');
+    }
+
+    // Retirer la photo de profil
+    const updatedStudent = await prisma.student.update({
+      where: { id: studentId },
+      data: {
+        profilePictureId: null
+      },
+      include: {
+        _count: {
+          select: {
+            photos: true,
+            tempPhotos: true
+          }
+        }
+      }
+    });
+
+    return updatedStudent;
   }
 }
 

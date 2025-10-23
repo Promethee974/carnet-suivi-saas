@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { AuthController } from './auth.controller.js';
 import { authMiddleware } from '../../middleware/auth.middleware.js';
+import { authLimiter } from '../../middleware/rateLimiting.middleware.js';
 
 const router = Router();
 
@@ -9,14 +10,14 @@ const router = Router();
  * @desc    Inscription d'un nouvel utilisateur
  * @access  Public
  */
-router.post('/register', AuthController.register);
+router.post('/register', authLimiter, AuthController.register);
 
 /**
  * @route   POST /api/auth/login
  * @desc    Connexion d'un utilisateur
  * @access  Public
  */
-router.post('/login', AuthController.login);
+router.post('/login', authLimiter, AuthController.login);
 
 /**
  * @route   GET /api/auth/me
