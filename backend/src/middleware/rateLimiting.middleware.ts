@@ -3,14 +3,18 @@ import { isDevelopment } from '../config/env.js';
 
 /**
  * Rate limiter global pour toutes les requêtes API
- * Limite par IP
+ * Limite par utilisateur (si authentifié) ou par IP (si non authentifié)
  */
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 1000 : 100, // Limite de requêtes par IP
-  message: 'Trop de requêtes depuis cette IP, veuillez réessayer plus tard.',
+  max: isDevelopment ? 1000 : 100, // Limite de requêtes par utilisateur/IP
+  message: 'Trop de requêtes, veuillez réessayer plus tard.',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  keyGenerator: (req) => {
+    // Priorise l'ID utilisateur si authentifié, sinon utilise l'IP
+    return req.user?.id || req.ip || 'unknown';
+  },
 });
 
 /**
@@ -24,6 +28,11 @@ export const authLimiter = rateLimit({
   skipSuccessfulRequests: true, // Ne compte que les requêtes échouées
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Pour l'auth, on utilise l'IP + email pour éviter le brute force ciblé
+    const email = req.body?.email || 'unknown';
+    return `auth:${req.ip}:${email}`;
+  },
 });
 
 /**

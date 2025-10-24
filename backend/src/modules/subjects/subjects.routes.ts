@@ -31,7 +31,7 @@ router.post('/seed', asyncHandler(async (req, res) => {
 
   await seedDefaultProgram(userId, schoolYearId);
 
-  res.json({
+  return res.json({
     status: 'success',
     message: 'Programme initialisé avec succès',
   });
@@ -118,7 +118,7 @@ router.get('/', asyncHandler(async (req, res) => {
   }
 
   // Format normal
-  res.json({
+  return res.json({
     status: 'success',
     data: subjects,
   });
@@ -134,7 +134,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
   const subject = await SubjectsService.getById(id, userId);
 
-  res.json({
+  return res.json({
     status: 'success',
     data: subject,
   });
@@ -169,7 +169,7 @@ router.post('/', asyncHandler(async (req, res) => {
     isTransversal,
   });
 
-  res.status(201).json({
+  return res.status(201).json({
     status: 'success',
     data: subject,
   });
@@ -191,7 +191,7 @@ router.patch('/:id', asyncHandler(async (req, res) => {
     order,
   });
 
-  res.json({
+  return res.json({
     status: 'success',
     data: subject,
   });
@@ -207,7 +207,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 
   await SubjectsService.deleteSubject(id, userId);
 
-  res.json({
+  return res.json({
     status: 'success',
     message: 'Matière supprimée avec succès',
   });
@@ -235,7 +235,7 @@ router.post('/:subjectId/domains', asyncHandler(async (req, res) => {
 
   const domain = await SubjectsService.createDomain(subjectId, userId, { name });
 
-  res.status(201).json({
+  return res.status(201).json({
     status: 'success',
     data: domain,
   });
@@ -252,7 +252,7 @@ router.patch('/domains/:id', asyncHandler(async (req, res) => {
 
   const domain = await SubjectsService.updateDomain(id, userId, { name, order });
 
-  res.json({
+  return res.json({
     status: 'success',
     data: domain,
   });
@@ -268,7 +268,7 @@ router.delete('/domains/:id', asyncHandler(async (req, res) => {
 
   await SubjectsService.deleteDomain(id, userId);
 
-  res.json({
+  return res.json({
     status: 'success',
     message: 'Domaine supprimé avec succès',
   });
@@ -296,7 +296,7 @@ router.post('/domains/:domainId/subdomains', asyncHandler(async (req, res) => {
 
   const subDomain = await SubjectsService.createSubDomain(domainId, userId, { name });
 
-  res.status(201).json({
+  return res.status(201).json({
     status: 'success',
     data: subDomain,
   });
@@ -313,7 +313,7 @@ router.patch('/subdomains/:id', asyncHandler(async (req, res) => {
 
   const subDomain = await SubjectsService.updateSubDomain(id, userId, { name, order });
 
-  res.json({
+  return res.json({
     status: 'success',
     data: subDomain,
   });
@@ -329,7 +329,7 @@ router.delete('/subdomains/:id', asyncHandler(async (req, res) => {
 
   await SubjectsService.deleteSubDomain(id, userId);
 
-  res.json({
+  return res.json({
     status: 'success',
     message: 'Sous-domaine supprimé avec succès',
   });
@@ -357,7 +357,7 @@ router.post('/subdomains/:subDomainId/objectives', asyncHandler(async (req, res)
 
   const objective = await SubjectsService.createObjective(subDomainId, userId, { name });
 
-  res.status(201).json({
+  return res.status(201).json({
     status: 'success',
     data: objective,
   });
@@ -374,7 +374,7 @@ router.patch('/objectives/:id', asyncHandler(async (req, res) => {
 
   const objective = await SubjectsService.updateObjective(id, userId, { name, order });
 
-  res.json({
+  return res.json({
     status: 'success',
     data: objective,
   });
@@ -390,7 +390,7 @@ router.delete('/objectives/:id', asyncHandler(async (req, res) => {
 
   await SubjectsService.deleteObjective(id, userId);
 
-  res.json({
+  return res.json({
     status: 'success',
     message: 'Objectif supprimé avec succès',
   });
@@ -423,7 +423,7 @@ router.post('/skills', asyncHandler(async (req, res) => {
     objectiveId,
   });
 
-  res.status(201).json({
+  return res.status(201).json({
     status: 'success',
     data: skill,
   });
@@ -440,7 +440,7 @@ router.patch('/skills/:id', asyncHandler(async (req, res) => {
 
   const skill = await SubjectsService.updateSkill(id, userId, { text, order });
 
-  res.json({
+  return res.json({
     status: 'success',
     data: skill,
   });
@@ -456,7 +456,7 @@ router.delete('/skills/:id', asyncHandler(async (req, res) => {
 
   await SubjectsService.deleteSkill(id, userId);
 
-  res.json({
+  return res.json({
     status: 'success',
     message: 'Compétence supprimée avec succès',
   });

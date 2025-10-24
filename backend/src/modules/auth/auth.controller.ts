@@ -73,7 +73,7 @@ export class AuthController {
   /**
    * POST /api/auth/logout
    */
-  static logout = asyncHandler(async (req: Request, res: Response) => {
+  static logout = asyncHandler(async (_req: Request, res: Response) => {
     // Dans un système basé sur JWT, le logout est géré côté client
     // (suppression du token du localStorage)
     // On peut ajouter ici une logique de blacklist de tokens si nécessaire

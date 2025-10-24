@@ -16,9 +16,9 @@ export class AppError extends Error {
 
 export function errorMiddleware(
   err: Error,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) {
   // Log l'erreur en développement
   if (isDevelopment) {

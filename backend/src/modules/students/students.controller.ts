@@ -125,7 +125,7 @@ export class StudentsController {
 
     const students = await studentsService.searchStudents(userId, query);
 
-    res.json({
+    return res.json({
       status: 'success',
       data: students
     });
@@ -180,7 +180,7 @@ export class StudentsController {
 
     const student = await studentsService.setProfilePicture(studentId, photoId, userId);
 
-    res.json({
+    return res.json({
       status: 'success',
       data: student
     });

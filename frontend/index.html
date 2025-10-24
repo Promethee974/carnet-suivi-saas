@@ -29,9 +29,10 @@
     <!-- Chart.js pour les graphiques -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   </head>
-  <body class="h-full">
+  <body class="h-full flex flex-col">
     <div id="header"></div>
-    <div id="app" class="min-h-screen"></div>
+    <div id="app" class="flex-1"></div>
+    <app-footer></app-footer>
     <!-- Toast Container pour les notifications -->
     <toast-container></toast-container>
     <script type="module" src="/src/main.ts"></script>

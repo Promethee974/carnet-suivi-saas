@@ -47,7 +47,7 @@ export class PhotosController {
       isTemp: isTemp === 'true' || isTemp === true
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       status: 'success',
       message: 'Photo uploadée avec succès',
       data: result

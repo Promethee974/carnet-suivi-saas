@@ -26,7 +26,7 @@ declare global {
  */
 export async function authMiddleware(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) {
   try {
@@ -83,7 +83,7 @@ export async function authMiddleware(
  */
 export async function optionalAuthMiddleware(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) {
   try {
@@ -108,7 +108,7 @@ export async function optionalAuthMiddleware(
  * Middleware de vérification des rôles
  */
 export function requireRole(...roles: string[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.user) {
       return next(new AppError(401, 'Authentication required'));
     }

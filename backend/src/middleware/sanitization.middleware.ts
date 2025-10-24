@@ -7,7 +7,7 @@ import mongoSanitize from 'express-mongo-sanitize';
  */
 export const mongoSanitization = mongoSanitize({
   replaceWith: '_',
-  onSanitize: ({ req, key }) => {
+  onSanitize: ({ key }) => {
     console.warn(`⚠️ Tentative d'injection MongoDB détectée dans ${key}`);
   },
 });
@@ -62,7 +62,7 @@ function sanitizeObject(obj: any): any {
  * Middleware XSS de base
  * Sanitize tous les inputs utilisateur dans req.body, req.query, et req.params
  */
-export const xssSanitization = (req: Request, res: Response, next: NextFunction) => {
+export const xssSanitization = (req: Request, _res: Response, next: NextFunction) => {
   try {
     if (req.body) {
       req.body = sanitizeObject(req.body);
@@ -94,17 +94,18 @@ export const validateUUID = (uuid: string): boolean => {
 /**
  * Middleware de validation des paramètres d'ID
  */
-export const validateIdParams = (req: Request, res: Response, next: NextFunction) => {
+export const validateIdParams = (req: Request, res: Response, next: NextFunction): void => {
   const idParams = ['id', 'studentId', 'photoId', 'skillId', 'userId', 'carnetId'];
 
   for (const param of idParams) {
     const value = req.params[param] || req.body[param] || req.query[param];
 
     if (value && typeof value === 'string' && !validateUUID(value)) {
-      return res.status(400).json({
+      res.status(400).json({
         status: 'error',
         message: `Format d'ID invalide pour ${param}`,
       });
+      return;
     }
   }
 

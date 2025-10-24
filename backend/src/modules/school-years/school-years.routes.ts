@@ -75,7 +75,7 @@ router.post('/', asyncHandler(async (req, res) => {
     endDate,
   });
 
-  res.status(201).json({
+  return res.status(201).json({
     status: 'success',
     data: schoolYear,
   });
