@@ -7,7 +7,7 @@ import { isDevelopment } from '../config/env.js';
  */
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 1000 : 100, // Limite de requêtes par utilisateur/IP
+  max: isDevelopment ? 2000 : 500, // Limite de requêtes par utilisateur/IP
   message: 'Trop de requêtes, veuillez réessayer plus tard.',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
@@ -15,6 +15,7 @@ export const globalLimiter = rateLimit({
     // Priorise l'ID utilisateur si authentifié, sinon utilise l'IP
     return req.user?.id || req.ip || 'unknown';
   },
+  skip: (req) => req.method === 'GET', // Ne pas limiter les requêtes GET (lecture)
 });
 
 /**
@@ -23,7 +24,7 @@ export const globalLimiter = rateLimit({
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 100 : 5, // 5 tentatives en 15 minutes
+  max: isDevelopment ? 100 : 15, // 15 tentatives en 15 minutes
   message: 'Trop de tentatives de connexion, veuillez réessayer plus tard.',
   skipSuccessfulRequests: true, // Ne compte que les requêtes échouées
   standardHeaders: true,

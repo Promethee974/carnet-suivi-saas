@@ -1,10 +1,10 @@
-const CACHE_NAME = 'carnet-gs-v1';
+const CACHE_NAME = 'carnet-gs-v2';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/global.css',
-  '/build/bundle.js',
-  '/build/bundle.css',
+  '/manifest.json',
+  '/manifest.webmanifest',
+  '/favicon.svg',
   '/icon-192x192.png',
   '/icon-512x512.png'
 ];
@@ -16,6 +16,9 @@ self.addEventListener('install', event => {
       .then(cache => {
         console.log('Cache ouvert');
         return cache.addAll(urlsToCache);
+      })
+      .catch(error => {
+        console.error('Erreur lors de la mise en cache initiale:', error);
       })
   );
 });
