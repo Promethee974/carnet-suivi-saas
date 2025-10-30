@@ -133,9 +133,7 @@ export class BackupsService {
       throw new Error('Sauvegarde non trouvée');
     }
 
-    // TODO: Implémenter downloadFile dans storageService
-    // const fileBuffer = await storageService.downloadFile(backup.s3Key);
-    const fileBuffer = Buffer.from(''); // Temporary placeholder
+    const fileBuffer = await storageService.downloadFile(backup.s3Key);
 
     return {
       backup,
@@ -158,9 +156,7 @@ export class BackupsService {
       throw new Error('Sauvegarde non trouvée');
     }
 
-    // TODO: Implémenter downloadFile dans storageService
-    // const fileBuffer = await storageService.downloadFile(backup.s3Key);
-    const fileBuffer = Buffer.from(JSON.stringify({ user: { id: userId }, students: [], carnets: [], photos: [], tempPhotos: [] })); // Temporary placeholder
+    const fileBuffer = await storageService.downloadFile(backup.s3Key);
     const backupData: BackupData = JSON.parse(fileBuffer.toString('utf-8'));
 
     // Vérifier que la sauvegarde appartient bien à cet utilisateur

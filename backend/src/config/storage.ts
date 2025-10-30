@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Readable } from 'node:stream';
 import { env } from './env.js';
 
 // Configuration du client S3
@@ -19,6 +20,21 @@ export interface UploadOptions {
   body: Buffer;
   contentType?: string;
 }
+
+const getBucketForKey = (key: string): string => {
+  if (key.startsWith('backups/')) {
+    return env.S3_BUCKET_BACKUPS;
+  }
+  return env.S3_BUCKET_PHOTOS;
+};
+
+const streamToBuffer = async (stream: Readable): Promise<Buffer> => {
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of stream) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+  }
+  return Buffer.concat(chunks);
+};
 
 /**
  * Upload un fichier vers S3/MinIO
@@ -77,18 +93,34 @@ export function generateFileKey(userId: string, type: 'photo' | 'backup', filena
  */
 export const storageService = {
   async uploadFile(buffer: Buffer, key: string, contentType: string): Promise<{ url: string; key: string }> {
-    const bucket = env.S3_BUCKET_PHOTOS;
+    const bucket = getBucketForKey(key);
     const url = await uploadFile({ bucket, key, body: buffer, contentType });
     return { url, key };
   },
 
   async deleteFile(key: string): Promise<void> {
-    const bucket = env.S3_BUCKET_PHOTOS;
+    const bucket = getBucketForKey(key);
     return deleteFile(bucket, key);
   },
 
   async getSignedUrl(key: string, expiresIn = 3600): Promise<string> {
-    const bucket = env.S3_BUCKET_PHOTOS;
+    const bucket = getBucketForKey(key);
     return getSignedDownloadUrl(bucket, key, expiresIn);
+  },
+
+  async downloadFile(key: string): Promise<Buffer> {
+    const bucket = getBucketForKey(key);
+    const command = new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    });
+
+    const response = await s3Client.send(command);
+    if (!response.Body) {
+      throw new Error('Empty file body');
+    }
+
+    const bodyStream = response.Body as Readable;
+    return streamToBuffer(bodyStream);
   },
 };

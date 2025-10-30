@@ -15,9 +15,9 @@ export interface UpdateStudentDto {
   nom?: string;
   prenom?: string;
   sexe?: 'F' | 'M' | 'AUTRE' | 'ND';
-  naissance?: string | null; // ISO date string
-  photoUrl?: string | null;
-  organizationId?: string | null;
+  naissance?: string | null | undefined; // ISO date string
+  photoUrl?: string | null | undefined;
+  organizationId?: string | null | undefined;
 }
 
 export class StudentsService {
